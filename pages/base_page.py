@@ -68,14 +68,27 @@ class BasePage:
         element.click()
 
     def input_text(self, locator: Locator, text: str, need_clear: bool = True,
-                   attempts: int = 3) -> None:
-        """输入文本，并在输入后校验元素 value 已生效（未生效自动重试）。
+                   attempts: int = 3, settle: float = 1.5) -> None:
+        """向输入框写入文本并**等待 React 提交 value**，未生效则用 JS 原生 setter 兜底。
 
-        背景：被测站点为 React 受控输入框，慢速环境（CI）下若输入后立即进行下一步，
-        输入值可能因重渲染丢失。输入后校验 value 可消除此类偶发。
+        背景：被测站点输入框为 React 受控组件，慢速环境（CI）下存在两种竞态：
+          1) 输入后 React 异步提交 value，立即读取可能仍为空；
+          2) React 水合（hydration）发生在输入之后时会把输入重置为空。
+        因此采用：send_keys → 轮询等待提交 → JS setter 兜底（派发 input/change 事件）→ 重试。
+        """
+        js_setter = """
+            const el = arguments[0];
+            const proto = el.tagName.toLowerCase() === 'textarea'
+                ? window.HTMLTextAreaElement.prototype
+                : window.HTMLInputElement.prototype;
+            const setter = Object.getOwnPropertyDescriptor(proto, 'value').set;
+            setter.call(el, arguments[1]);
+            el.dispatchEvent(new Event('input', {bubbles: true}));
+            el.dispatchEvent(new Event('change', {bubbles: true}));
         """
         for attempt in range(1, attempts + 1):
             element = self.find_element(locator)
+            # 1) 常规输入（清空 + send_keys）
             try:
                 if need_clear:
                     element.clear()
@@ -87,14 +100,34 @@ class BasePage:
             except (StaleElementReferenceException, ElementNotInteractableException):
                 logger.warning("输入 %s 遇元素被替换(%s)，重试", locator, attempt)
                 continue
+
+            # 2) 轮询等待 React 提交 value
+            if self._wait_value(element, text, settle):
+                logger.info("输入文本: %s -> %s", locator[1], text)
+                return
+
+            # 3) JS 原生 setter 兜底（绕过异步提交/水合重置）
             try:
-                if element.get_attribute("value") == text:
-                    logger.info("输入文本: %s -> %s", locator[1], text)
-                    return
+                self.driver.execute_script(js_setter, element, text)
             except StaleElementReferenceException:
                 continue
+            if self._wait_value(element, text, settle):
+                logger.info("输入文本(JS兜底): %s -> %s", locator[1], text)
+                return
             logger.warning("输入 %s 后 value 未生效(期望=%r)，第 %s 次重试", locator, text, attempt)
         raise TimeoutException(f"向 {locator} 输入文本失败(已尝试 {attempts} 次): {text!r}")
+
+    def _wait_value(self, element: WebElement, expected: str, timeout: float) -> bool:
+        """轮询等待元素 value 变为期望值（容忍 React 异步提交）。"""
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            try:
+                if element.get_attribute("value") == expected:
+                    return True
+            except StaleElementReferenceException:
+                return False
+            time.sleep(0.1)
+        return False
 
     def get_text(self, locator: Locator) -> str:
         return self.find_element(locator).text
