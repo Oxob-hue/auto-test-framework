@@ -23,14 +23,18 @@ class CartPage(BasePage):
         return self.get_text(self.ITEM_QUANTITY)
 
     def remove_backpack(self) -> None:
-        """移除背包商品。"""
-        self.click(self.REMOVE_BACKPACK_BUTTON)
+        """移除背包商品，并等待 React 状态提交（该行移除按钮从 DOM 消失）。"""
+        self.click_until(self.REMOVE_BACKPACK_BUTTON,
+                         "return !document.querySelector('#remove-sauce-labs-backpack')",
+                         "移除背包后按钮消失")
 
     def continue_shopping(self) -> None:
         """返回商品列表继续购物。"""
         self.click(self.CONTINUE_SHOPPING_BUTTON)
 
     def click_checkout(self) -> CheckoutPage:
-        """点击 Checkout 进入结算信息填写页。"""
-        self.click(self.CHECKOUT_BUTTON)
+        """点击 Checkout 进入结算信息填写页（等待跳转完成，防 React 丢点击）。"""
+        self.click_until(self.CHECKOUT_BUTTON,
+                         "return location.pathname.includes('checkout-step-one')",
+                         "跳转结算信息页")
         return CheckoutPage(self.driver)

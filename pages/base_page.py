@@ -6,9 +6,10 @@
 - 元素定位方式统一使用 (By.XXX, value) 元组，Page Object 内部维护。
 """
 import logging
-from typing import List, Optional, Tuple
+import time
+from typing import Callable, List, Optional, Tuple
 
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import ElementClickInterceptedException, StaleElementReferenceException, TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
@@ -22,6 +23,9 @@ logger = get_logger("base_page")
 
 # 定位器类型：(By.ID, "xxx")
 Locator = Tuple[By, str]
+
+# JS 条件脚本可用占位：页面对象传参时用它校验点击后的状态
+JsCondition = Callable[[WebDriver], bool]
 
 
 class BasePage:
@@ -76,3 +80,39 @@ class BasePage:
 
     def get_current_url(self) -> str:
         return self.driver.current_url
+
+    # ---------------- React 重渲染稳健操作 ----------------
+    def _wait_js_until(self, js_script: str, timeout: float) -> bool:
+        """轮询执行 JS 表达式直到返回真值（不依赖隐式等待，避免空查询阻塞）。"""
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            try:
+                if self.driver.execute_script(js_script):
+                    return True
+            except Exception:  # noqa: BLE001 页面切换等瞬时异常按未达成处理
+                pass
+            time.sleep(0.3)
+        return False
+
+    def click_until(self, locator: Locator, js_condition: str,
+                    description: str, attempts: int = 3, per_timeout: float = 6.0) -> None:
+        """点击元素并等待 JS 条件成立；未成立则重新点击（最多 attempts 次）。
+
+        背景：被测站点为 React 应用，慢速环境（CI）下点击可能落在 React 重渲染
+        替换前的旧节点上导致“点击丢失”（无报错但无效果）。点击后校验状态提交
+        （URL 变化 / 元素增删）可消除此类偶发失败。
+        """
+        for attempt in range(1, attempts + 1):
+            try:
+                element = WebDriverWait(self.driver, self.timeout).until(
+                    EC.element_to_be_clickable(locator), message=f"元素不可点击: {locator}")
+                element.click()
+            except (StaleElementReferenceException, ElementClickInterceptedException):
+                # React 恰好替换节点/出现瞬时遮挡：等一拍后整轮重试
+                logger.warning("点击 %s 遇到元素被替换(%s)，重试", locator, attempt)
+                time.sleep(0.5)
+                continue
+            if self._wait_js_until(js_condition, per_timeout):
+                return
+            logger.warning("点击后状态未达成(%s)，第 %s 次重试点击 %s", description, attempt, locator)
+        raise TimeoutException(f"点击 {locator} 后状态未达成: {description}（已尝试 {attempts} 次）")

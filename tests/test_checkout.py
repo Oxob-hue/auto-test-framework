@@ -62,9 +62,9 @@ def test_checkout_requires_postal_code(driver, base_url):
         cart_page = inventory_page.go_to_cart()
         checkout_page = cart_page.click_checkout()
 
-    with allure.step("填写姓名但留空邮编并继续"):
+    with allure.step("填写姓名但留空邮编并提交"):
         checkout_page.fill_customer_info("San", "Zhang", "")
-        checkout_page.continue_to_overview()
+        checkout_page.submit_form()
 
     with allure.step("断言停留在填写页并提示邮编必填"):
         assert "Postal Code is required" in checkout_page.get_error_message(), \

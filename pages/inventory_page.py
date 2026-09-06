@@ -23,16 +23,20 @@ class InventoryPage(BasePage):
     SORT_PRICE_LOW_TO_HIGH = "lohi"
     SORT_PRICE_HIGH_TO_LOW = "hilo"
 
+    # React 提交加购后，add 按钮会替换为 remove 按钮（id 形如 remove-<商品>）
+    _REMOVE_BACKPACK_JS = "return !!document.querySelector('#remove-sauce-labs-backpack')"
+    _REMOVE_BIKE_LIGHT_JS = "return !!document.querySelector('#remove-sauce-labs-bike-light')"
+
     def get_title_text(self) -> str:
         return self.get_text(self.TITLE)
 
     def add_backpack_to_cart(self) -> None:
-        """把“Sauce Labs Backpack”加入购物车。"""
-        self.click(self.ADD_TO_CART_BUTTON)
+        """把“Sauce Labs Backpack”加入购物车，并等待 React 状态提交完成。"""
+        self.click_until(self.ADD_TO_CART_BUTTON, self._REMOVE_BACKPACK_JS, "加购后出现移除按钮")
 
     def add_bike_light_to_cart(self) -> None:
-        """把“Sauce Labs Bike Light”加入购物车。"""
-        self.click(self.ADD_BIKE_LIGHT_BUTTON)
+        """把“Sauce Labs Bike Light”加入购物车，并等待 React 状态提交完成。"""
+        self.click_until(self.ADD_BIKE_LIGHT_BUTTON, self._REMOVE_BIKE_LIGHT_JS, "加购后出现移除按钮")
 
     def get_cart_badge_count(self) -> Optional[str]:
         """购物车角标数量；尚未加购（角标不存在）时返回 None。"""
@@ -51,6 +55,8 @@ class InventoryPage(BasePage):
         return prices
 
     def go_to_cart(self) -> CartPage:
-        """点击购物车入口并返回购物车页面对象（页面跳转封装）。"""
-        self.click(self.CART_LINK)
+        """点击购物车入口跳转购物车页（等待跳转完成，防 React 丢点击）。"""
+        self.click_until(self.CART_LINK,
+                         "return location.pathname.includes('/cart')",
+                         "跳转购物车页")
         return CartPage(self.driver)

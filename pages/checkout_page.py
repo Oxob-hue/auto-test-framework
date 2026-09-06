@@ -26,13 +26,22 @@ class CheckoutPage(BasePage):
         self.input_text(self.LAST_NAME_INPUT, last_name)
         self.input_text(self.POSTAL_CODE_INPUT, postal_code)
 
-    def continue_to_overview(self) -> None:
-        """信息填写页 → 订单总览页。"""
+    def submit_form(self) -> None:
+        """点击 Continue 提交表单（不等待跳转），用于表单校验失败场景：
+        期望页面停留并展示错误提示。"""
         self.click(self.CONTINUE_BUTTON)
 
+    def continue_to_overview(self) -> None:
+        """正向流程：信息填写页 → 订单总览页（等待跳转完成）。"""
+        self.click_until(self.CONTINUE_BUTTON,
+                         "return location.pathname.includes('checkout-step-two')",
+                         "跳转订单总览页")
+
     def finish_order(self) -> None:
-        """订单总览页 → 点击 Finish 完成下单。"""
-        self.click(self.FINISH_BUTTON)
+        """订单总览页 → 点击 Finish 完成下单（等待跳转完成）。"""
+        self.click_until(self.FINISH_BUTTON,
+                         "return location.pathname.includes('checkout-complete')",
+                         "跳转下单完成页")
 
     def get_complete_header(self) -> str:
         """下单成功后的提示文案。"""
