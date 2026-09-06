@@ -1,0 +1,7 @@
+{
+  "create_pets": [
+    {"pet_id": 30001, "pet_name": "json_dog_available", "status": "available"},
+    {"pet_id": 30002, "pet_name": "json_dog_pending", "status": "pending"},
+    {"pet_id": 30003, "pet_name": "json_dog_sold", "status": "sold"}
+  ]
+}

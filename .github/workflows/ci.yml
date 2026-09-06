@@ -1,0 +1,104 @@
+# 自动化回归流水线
+#
+# 功能：
+#   1) push / PR / 定时（每日 01:00 UTC）/ 手动触发 全量回归；
+#   2) 接口用例在 ubuntu 上直接运行；
+#   3) Web 用例通过环境变量切换 Chrome 无头模式运行（Selenium Manager 自动匹配驱动）；
+#   4) 汇总两个 Job 的 Allure 结果，生成报告并上传为 Artifact（可下载/可部署 GitHub Pages）。
+#
+# 说明：config.ini 默认 headless=false、browser=edge，CI 通过 TEST_* 环境变量覆盖，
+#       无需修改任何配置文件即可在无界面环境运行（对应 common/config_util.py 的 env 覆盖机制）。
+
+name: 自动化回归 CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  schedule:
+    - cron: '0 1 * * *'          # 每天 01:00 UTC 定时回归
+  workflow_dispatch:             # 支持手动触发
+
+jobs:
+  api-tests:
+    name: 接口自动化（Petstore）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 安装依赖
+        run: pip install -r requirements.txt
+
+      - name: 运行接口用例
+        run: python -m pytest -m api -q
+
+      - name: 上传 Allure 结果（接口）
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results-api
+          path: allure-results
+          if-no-files-found: error
+
+  web-tests:
+    name: Web 自动化（SauceDemo，Chrome 无头）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 安装依赖
+        run: pip install -r requirements.txt
+
+      - name: 运行 Web 用例（环境变量覆盖：Chrome + 无头）
+        env:
+          TEST_WEB_BROWSER: chrome
+          TEST_WEB_HEADLESS: 'true'
+        run: python -m pytest -m web -q
+
+      - name: 上传 Allure 结果（Web）
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results-web
+          path: allure-results
+          if-no-files-found: error
+
+  allure-report:
+    name: 生成 Allure 报告
+    needs: [api-tests, web-tests]
+    if: always()                 # 即使有失败也生成报告，便于查看失败详情
+    runs-on: ubuntu-latest
+    steps:
+      - name: 下载接口 Allure 结果
+        uses: actions/download-artifact@v4
+        with:
+          name: allure-results-api
+          path: allure-results
+
+      - name: 下载 Web Allure 结果
+        uses: actions/download-artifact@v4
+        with:
+          name: allure-results-web
+          path: allure-results
+
+      - name: 生成 Allure 报告
+        run: |
+          curl -fsSL -o allure.tgz \
+            https://github.com/allure-framework/allure2/releases/download/2.30.0/allure-2.30.0.tgz
+          tar -xzf allure.tgz
+          ./allure-2.30.0/bin/allure generate allure-results -o allure-report --clean
+
+      - name: 上传 Allure 报告
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: allure-report
+          if-no-files-found: error
