@@ -9,8 +9,11 @@ import logging
 import time
 from typing import Callable, List, Optional, Tuple
 
-from selenium.common.exceptions import ElementClickInterceptedException, StaleElementReferenceException, TimeoutException
+from selenium.common.exceptions import (ElementClickInterceptedException,
+                                        ElementNotInteractableException,
+                                        StaleElementReferenceException, TimeoutException)
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
@@ -64,13 +67,34 @@ class BasePage:
         logger.info("点击元素: %s", locator)
         element.click()
 
-    def input_text(self, locator: Locator, text: str, need_clear: bool = True) -> None:
-        """输入文本；默认先清空再输入。"""
-        element = self.find_element(locator)
-        if need_clear:
-            element.clear()
-        element.send_keys(text)
-        logger.info("输入文本: %s -> %s", locator[1], text)
+    def input_text(self, locator: Locator, text: str, need_clear: bool = True,
+                   attempts: int = 3) -> None:
+        """输入文本，并在输入后校验元素 value 已生效（未生效自动重试）。
+
+        背景：被测站点为 React 受控输入框，慢速环境（CI）下若输入后立即进行下一步，
+        输入值可能因重渲染丢失。输入后校验 value 可消除此类偶发。
+        """
+        for attempt in range(1, attempts + 1):
+            element = self.find_element(locator)
+            try:
+                if need_clear:
+                    element.clear()
+                else:
+                    element.send_keys(Keys.CONTROL, "a")
+                    element.send_keys(Keys.DELETE)
+                if text:
+                    element.send_keys(text)
+            except (StaleElementReferenceException, ElementNotInteractableException):
+                logger.warning("输入 %s 遇元素被替换(%s)，重试", locator, attempt)
+                continue
+            try:
+                if element.get_attribute("value") == text:
+                    logger.info("输入文本: %s -> %s", locator[1], text)
+                    return
+            except StaleElementReferenceException:
+                continue
+            logger.warning("输入 %s 后 value 未生效(期望=%r)，第 %s 次重试", locator, text, attempt)
+        raise TimeoutException(f"向 {locator} 输入文本失败(已尝试 {attempts} 次): {text!r}")
 
     def get_text(self, locator: Locator) -> str:
         return self.find_element(locator).text

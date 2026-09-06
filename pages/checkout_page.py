@@ -18,7 +18,8 @@ class CheckoutPage(BasePage):
     CONTINUE_BUTTON = (By.ID, "continue")
     FINISH_BUTTON = (By.ID, "finish")
     COMPLETE_HEADER = (By.CLASS_NAME, "complete-header")
-    ERROR_MESSAGE = (By.CSS_SELECTOR, "h3[data-test='error']")
+    # 错误提示容器（不限标签，兼容 h3/div 渲染差异）
+    ERROR_MESSAGE = (By.CSS_SELECTOR, "[data-test='error']")
 
     def fill_customer_info(self, first_name: str, last_name: str, postal_code: str) -> None:
         """填写收货人姓名与邮编。"""
