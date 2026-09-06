@@ -173,7 +173,7 @@ allure open allure-report
 首次推送与跑绿的逐步指引见 [`docs/GitHub推送与CI首次运行指南.md`](docs/GitHub推送与CI首次运行指南.md)
 （含 PAT 生成、排错与徽章替换）。流水线跑绿后可将下方占位替换为真实徽章：
 
-[![CI](https://github.com/<你的用户名>/<仓库名>/actions/workflows/ci.yml/badge.svg)](https://github.com/<你的用户名>/<仓库名>/actions/workflows/ci.yml)
+[![CI](https://github.com/Oxob-hue/auto-test-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/Oxob-hue/auto-test-framework/actions/workflows/ci.yml)
 
 ---
 
