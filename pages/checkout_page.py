@@ -51,3 +51,9 @@ class CheckoutPage(BasePage):
     def get_error_message(self) -> str:
         """表单校验失败时的错误提示。"""
         return self.get_text(self.ERROR_MESSAGE)
+
+    def try_get_error_message(self, timeout: float = 3.0):
+        """获取错误提示；提示未渲染（存在浏览器渲染差异）时返回 None，不抛异常。"""
+        if self.is_element_visible(self.ERROR_MESSAGE, timeout=timeout):
+            return self.get_text(self.ERROR_MESSAGE)
+        return None
