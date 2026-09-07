@@ -152,24 +152,28 @@ class BasePage:
         return False
 
     def click_until(self, locator: Locator, js_condition: str,
-                    description: str, attempts: int = 3, per_timeout: float = 6.0) -> None:
-        """点击元素并等待 JS 条件成立；未成立则重新点击（最多 attempts 次）。
+                    description: str, attempts: int = 4, per_timeout: float = 5.0) -> None:
+        """点击元素并等待 JS 条件成立；未成立则换点击方式重试（最多 attempts 次）。
 
-        背景：被测站点为 React 应用，慢速环境（CI）下点击可能落在 React 重渲染
-        替换前的旧节点上导致“点击丢失”（无报错但无效果）。点击后校验状态提交
-        （URL 变化 / 元素增删）可消除此类偶发失败。
+        背景：被测站点为 React 应用，慢速/高负载环境（CI）下存在两类偶发：
+          1) 点击落在 React 重渲染替换前的旧节点上（无报错但无效果）；
+          2) WebDriver 的可信点击偶发不被 React 委托接收。
+        应对：Selenium 原生点击 与 JS element.click()（事件冒泡到 React 根节点）
+        两种技术交替重试，并以 URL 变化 / 元素增删等状态提交作为成功判据。
         """
         for attempt in range(1, attempts + 1):
             try:
                 element = WebDriverWait(self.driver, self.timeout).until(
                     EC.element_to_be_clickable(locator), message=f"元素不可点击: {locator}")
-                element.click()
+                if attempt % 2 == 1:
+                    element.click()                              # 原生点击
+                else:
+                    self.driver.execute_script("arguments[0].click();", element)  # JS 点击兜底
             except (StaleElementReferenceException, ElementClickInterceptedException):
-                # React 恰好替换节点/出现瞬时遮挡：等一拍后整轮重试
-                logger.warning("点击 %s 遇到元素被替换(%s)，重试", locator, attempt)
+                logger.warning("点击 %s 遇元素被替换/遮挡(%s)，重试", locator, attempt)
                 time.sleep(0.5)
                 continue
             if self._wait_js_until(js_condition, per_timeout):
                 return
-            logger.warning("点击后状态未达成(%s)，第 %s 次重试点击 %s", description, attempt, locator)
+            logger.warning("点击后状态未达成(%s)，第 %s 次换方式重试 %s", description, attempt, locator)
         raise TimeoutException(f"点击 {locator} 后状态未达成: {description}（已尝试 {attempts} 次）")

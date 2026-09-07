@@ -43,6 +43,9 @@ def driver():
         service = EdgeService(get_config("web", "driver_path"))
         driver_cls = webdriver.Edge
 
+    # 开启浏览器 console 日志，便于失败时分析前端 JS 错误（如 React 异常）
+    options.set_capability("goog:loggingPrefs", {"browser": "ALL"})
+
     if headless:
         options.add_argument("--headless=new")
     options.add_argument("--window-size=1920,1080")
@@ -119,3 +122,12 @@ def pytest_runtest_makereport(item, call):
                               attachment_type=allure.attachment_type.TEXT)
             except Exception as exc:  # noqa: BLE001
                 logger.warning("抓取页面源码失败: %s", exc)
+            try:
+                entries = driver.get_log("browser")
+                lines = [f"[{e.get('level')}] {e.get('message')}" for e in entries]
+                if lines:
+                    allure.attach("\n".join(lines[-100:]),
+                                  name="浏览器Console日志",
+                                  attachment_type=allure.attachment_type.TEXT)
+            except Exception as exc:  # noqa: BLE001 部分驱动不支持取日志
+                logger.warning("获取浏览器日志失败: %s", exc)
