@@ -102,3 +102,37 @@ jobs:
           name: allure-report
           path: allure-report
           if-no-files-found: error
+
+  deploy-pages:
+    name: 发布 Allure 报告到 GitHub Pages
+    # 仅当接口/Web 测试都通过且为 main 分支时才发布，保证在线报告始终是"全绿"版本
+    needs: [api-tests, web-tests, allure-report]
+    if: github.ref == 'refs/heads/main' &&
+        needs.api-tests.result == 'success' &&
+        needs.web-tests.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write               # 允许部署 GitHub Pages
+      id-token: write            # 用于 OIDC 身份认证
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false  # 同一时间只发布一次，避免互相覆盖
+    steps:
+      - name: 下载 Allure 报告
+        uses: actions/download-artifact@v4
+        with:
+          name: allure-report
+          path: allure-report
+
+      - name: 上传 Pages 产物
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: allure-report
+
+      - name: 部署到 GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
