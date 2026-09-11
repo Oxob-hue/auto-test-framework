@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>测试用例表</title><style>
+@page { size: A4; margin: 14mm 12mm; }
+body { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; color:#222;
+       font-size: 11.5px; line-height: 1.6; margin: 0 auto; max-width: 190mm; }
+h1 { font-size: 19px; border-bottom: 2px solid #2f6fed; padding-bottom: 6px; }
+h2 { font-size: 14px; color:#1a4fbf; margin-top: 14px; border-left: 4px solid #2f6fed; padding-left: 7px; }
+h3 { font-size: 12.5px; margin-top: 10px; }
+table { border-collapse: collapse; width: 100%; margin: 6px 0 10px; }
+th, td { border: 1px solid #bbb; padding: 3px 5px; font-size: 10.5px; vertical-align: top; }
+th { background: #eef3ff; font-weight: 600; }
+tr { page-break-inside: avoid; }
+code { background: #f5f5f5; padding: 1px 3px; border-radius: 3px; font-size: 10.5px; }
+blockquote { border-left: 3px solid #ccc; color: #555; margin: 6px 0; padding: 2px 10px; }
+pre { background:#f7f7f7; padding:6px 8px; overflow:auto; }
+hr { border: none; border-top: 1px dashed #ccc; margin: 12px 0; }
+ul, ol { margin: 4px 0 4px 20px; padding: 0; }
+</style></head><body><h1>测试用例表（全量 47 条）</h1>
+<blockquote>
+<p>说明：
+- 优先级：P0 = 核心主流程（冒烟），P1 = 主要功能，P2 = 异常/边界；
+- 类型：正向 / 反向 / 参数化 / 数据驱动 / 契约；
+- "自动化实现"列为真实代码位置，可直接在仓库中对应查看；
+- 执行方式示例：<code>pytest -m api</code>、<code>pytest -m web</code>、<code>pytest -m smoke</code>、<code>pytest -m negative</code>。</p>
+</blockquote>
+<h2>一、接口用例（20 条｜Petstore）</h2>
+<table>
+<thead>
+<tr>
+<th>用例编号</th>
+<th>模块</th>
+<th>用例标题</th>
+<th>类型</th>
+<th>优先级</th>
+<th>前置条件</th>
+<th>主要步骤</th>
+<th>预期结果</th>
+<th>自动化实现</th>
+<th>marker</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TC-API-001</td>
+<td>宠物管理</td>
+<td>按 ID 查询已创建的宠物</td>
+<td>正向</td>
+<td>P1</td>
+<td>前置 fixture 已创建宠物（id 随机）</td>
+<td>1) <code>GET /pet/{id}</code> 2) 校验状态码与字段 3) jsonschema 结构校验</td>
+<td>状态码 200；返回 <code>id</code>/<code>name</code>/<code>status</code> 与创建时一致；结构符合 schema</td>
+<td><code>tests/test_pet.py::test_get_pet_by_id</code></td>
+<td>api</td>
+</tr>
+<tr>
+<td>TC-API-002</td>
+<td>异常场景</td>
+<td>查询不存在的宠物</td>
+<td>反向</td>
+<td>P2</td>
+<td>无</td>
+<td>1) 生成随机不存在 ID 2) <code>GET /pet/{id}</code></td>
+<td>返回 404（或 400）</td>
+<td><code>tests/test_pet.py::test_get_non_exist_pet</code></td>
+<td>api, negative</td>
+</tr>
+<tr>
+<td>TC-API-003</td>
+<td>宠物管理</td>
+<td>创建宠物</td>
+<td>正向</td>
+<td>P1</td>
+<td>无</td>
+<td>1) <code>POST /pet</code> 2) 校验返回体 3) 清理数据</td>
+<td>状态码 200；<code>id/name/status</code> 与请求一致；结构符合 schema</td>
+<td><code>tests/test_pet.py::test_create_pet</code></td>
+<td>api</td>
+</tr>
+<tr>
+<td>TC-API-004</td>
+<td>宠物管理</td>
+<td>整体更新宠物（PUT）</td>
+<td>正向</td>
+<td>P1</td>
+<td>已创建宠物</td>
+<td>1) <code>PUT /pet</code> 修改 name/status 2) 再次 <code>GET</code> 校验</td>
+<td>更新成功；再次查询可见新名称与新状态</td>
+<td><code>tests/test_pet.py::test_update_pet</code></td>
+<td>api</td>
+</tr>
+<tr>
+<td>TC-API-005</td>
+<td>宠物管理</td>
+<td>删除宠物并验证不可再查</td>
+<td>正向</td>
+<td>P1</td>
+<td>已创建宠物</td>
+<td>1) <code>DELETE /pet/{id}</code> 2) 再次 <code>GET /pet/{id}</code></td>
+<td>删除返回 200；再次查询返回 404</td>
+<td><code>tests/test_pet.py::test_delete_pet</code></td>
+<td>api</td>
+</tr>
+<tr>
+<td>TC-API-006</td>
+<td>异常场景</td>
+<td>删除不存在的宠物（幂等）</td>
+<td>反向</td>
+<td>P2</td>
+<td>无</td>
+<td>1) 随机不存在 ID 2) <code>DELETE /pet/{id}</code></td>
+<td>返回 404（或 400），不产生副作用</td>
+<td><code>tests/test_pet.py::test_delete_non_exist_pet</code></td>
+<td>api, negative</td>
+</tr>
+<tr>
+<td>TC-API-007</td>
+<td>状态查询</td>
+<td>按状态 available 查询</td>
+<td>参数化</td>
+<td>P1</td>
+<td>无</td>
+<td>1) <code>GET /pet/findByStatus?status=available</code> 2) 校验列表项状态</td>
+<td>状态码 200；返回列表且每项 <code>status=available</code></td>
+<td><code>tests/test_pet.py::test_find_pets_by_status[available]</code></td>
+<td>api</td>
+</tr>
+<tr>
+<td>TC-API-008</td>
+<td>状态查询</td>
+<td>按状态 pending 查询</td>
+<td>参数化</td>
+<td>P1</td>
+<td>无</td>
+<td>同上，status=pending</td>
+<td>状态码 200；列表项 <code>status=pending</code></td>
+<td><code>tests/test_pet.py::test_find_pets_by_status[pending]</code></td>
+<td>api</td>
+</tr>
+<tr>
+<td>TC-API-009</td>
+<td>状态查询</td>
+<td>按状态 sold 查询</td>
+<td>参数化</td>
+<td>P1</td>
+<td>无</td>
+<td>同上，status=sold</td>
+<td>状态码 200；列表项 <code>status=sold</code></td>
+<td><code>tests/test_pet.py::test_find_pets_by_status[sold]</code></td>
+<td>api</td>
+</tr>
+<tr>
+<td>TC-API-010</td>
+<td>数据驱动</td>
+<td>JSON 数据创建（available）</td>
+<td>数据驱动</td>
+<td>P1</td>
+<td>数据文件 <code>test_data/pet_data.json</code></td>
+<td>1) 读取 JSON 用例 2) <code>POST /pet</code> 3) 校验 4) 清理</td>
+<td>创建成功；<code>name/status</code> 与数据一致</td>
+<td><code>tests/test_pet_param.py::test_create_pet_from_json[json_dog_available]</code></td>
+<td>api</td>
+</tr>
+<tr>
+<td>TC-API-011</td>
+<td>数据驱动</td>
+<td>JSON 数据创建（pending）</td>
+<td>数据驱动</td>
+<td>P1</td>
+<td>同上</td>
+<td>同上</td>
+<td>同上</td>
+<td><code>tests/test_pet_param.py::test_create_pet_from_json[json_dog_pending]</code></td>
+<td>api</td>
+</tr>
+<tr>
+<td>TC-API-012</td>
+<td>数据驱动</td>
+<td>JSON 数据创建（sold）</td>
+<td>数据驱动</td>
+<td>P1</td>
+<td>同上</td>
+<td>同上</td>
+<td>同上</td>
+<td><code>tests/test_pet_param.py::test_create_pet_from_json[json_dog_sold]</code></td>
+<td>api</td>
+</tr>
+<tr>
+<td>TC-API-013</td>
+<td>边界数据</td>
+<td>中文 + 表情符号名称往返一致</td>
+<td>正向/边界</td>
+<td>P1</td>
+<td>无</td>
+<td>1) 以 <code>测试宠物-🐶_v1</code> 创建 2) <code>GET</code> 回读</td>
+<td>创建 200；回读名称与写入完全一致（编码正确）</td>
+<td><code>tests/test_pet_contract.py::test_create_pet_with_chinese_and_symbol_name_roundtrip</code></td>
+<td>api</td>
+</tr>
+<tr>
+<td>TC-API-014</td>
+<td>边界数据</td>
+<td>超长名称（256 字符）创建与回读</td>
+<td>正向/边界</td>
+<td>P2</td>
+<td>无</td>
+<td>1) 以 256 字符名称创建 2) <code>GET</code> 回读</td>
+<td>不 5xx；回读名称非空且长度合理（≥200）</td>
+<td><code>tests/test_pet_contract.py::test_create_pet_with_long_name</code></td>
+<td>api</td>
+</tr>
+<tr>
+<td>TC-API-015</td>
+<td>幂等与覆盖</td>
+<td>同一 ID 重复创建以最后一次为准</td>
+<td>正向/契约</td>
+<td>P1</td>
+<td>无</td>
+<td>1) 同 ID 创建 name=first 2) 再创建 name=second 3) <code>GET</code></td>
+<td>第二次创建 200；回读名称为 <code>second_version</code></td>
+<td><code>tests/test_pet_contract.py::test_create_same_id_twice_second_wins</code></td>
+<td>api</td>
+</tr>
+<tr>
+<td>TC-API-016</td>
+<td>幂等与覆盖</td>
+<td>PUT 不存在 ID 的行为自洽性</td>
+<td>契约</td>
+<td>P2</td>
+<td>无</td>
+<td>1) <code>PUT /pet</code>（随机不存在 ID）2) 依返回码校验是否可查到</td>
+<td>200 → 可查到且字段一致；404 → 查不到（行为自洽）</td>
+<td><code>tests/test_pet_contract.py::test_update_non_exist_pet_contract</code></td>
+<td>api</td>
+</tr>
+<tr>
+<td>TC-API-017</td>
+<td>异常入参</td>
+<td>非法 status 取值不应 5xx</td>
+<td>反向</td>
+<td>P2</td>
+<td>无</td>
+<td>1) 以 <code>status=invalid_status</code> 创建 2) 校验响应与回读</td>
+<td>状态码 &lt; 500；响应可解析；可回读</td>
+<td><code>tests/test_pet_contract.py::test_invalid_status_value_not_5xx</code></td>
+<td>api, negative</td>
+</tr>
+<tr>
+<td>TC-API-018</td>
+<td>异常入参</td>
+<td>缺少必填字段不应 5xx</td>
+<td>反向</td>
+<td>P2</td>
+<td>无</td>
+<td>1) <code>POST /pet</code> 仅提交 <code>{"id": x}</code> 2) 校验响应</td>
+<td>状态码 &lt; 500；返回体可解析（不崩溃）</td>
+<td><code>tests/test_pet_contract.py::test_missing_required_fields_not_5xx</code></td>
+<td>api, negative</td>
+</tr>
+<tr>
+<td>TC-API-019</td>
+<td>响应契约</td>
+<td>Content-Type 与响应耗时契约</td>
+<td>契约</td>
+<td>P2</td>
+<td>已创建宠物</td>
+<td>1) <code>GET /pet/{id}</code> 2) 校验响应头与耗时</td>
+<td><code>Content-Type</code> 含 <code>application/json</code>；耗时 &lt; 5s</td>
+<td><code>tests/test_pet_contract.py::test_response_contract_content_type_and_latency</code></td>
+<td>api</td>
+</tr>
+<tr>
+<td>TC-API-020</td>
+<td>异常入参</td>
+<td>findByStatus 非法状态值</td>
+<td>反向</td>
+<td>P2</td>
+<td>无</td>
+<td>1) <code>GET /pet/findByStatus?status=__invalid_status__</code></td>
+<td>返回 200（空列表）或 400；不 5xx</td>
+<td><code>tests/test_pet_contract.py::test_find_by_status_invalid_value</code></td>
+<td>api, negative</td>
+</tr>
+</tbody>
+</table>
+<h2>二、Web 用例（27 条｜SauceDemo）</h2>
+<table>
+<thead>
+<tr>
+<th>用例编号</th>
+<th>模块</th>
+<th>用例标题</th>
+<th>类型</th>
+<th>优先级</th>
+<th>前置条件</th>
+<th>主要步骤</th>
+<th>预期结果</th>
+<th>自动化实现</th>
+<th>marker</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TC-WEB-001</td>
+<td>登录</td>
+<td>standard_user 正常登录</td>
+<td>正向</td>
+<td>P0</td>
+<td>站点可用</td>
+<td>1) 打开登录页 2) 输入正确账号密码 3) 登录</td>
+<td>进入商品列表页，标题 Products</td>
+<td><code>tests/test_login.py::test_login_success[standard_user]</code></td>
+<td>web, smoke</td>
+</tr>
+<tr>
+<td>TC-WEB-002</td>
+<td>登录</td>
+<td>problem_user 正常登录</td>
+<td>正向</td>
+<td>P1</td>
+<td>站点可用</td>
+<td>同上（problem_user）</td>
+<td>进入商品列表页，标题 Products</td>
+<td><code>tests/test_login.py::test_login_success[problem_user]</code></td>
+<td>web, smoke</td>
+</tr>
+<tr>
+<td>TC-WEB-003</td>
+<td>登录</td>
+<td>锁定账号登录被拦截</td>
+<td>反向</td>
+<td>P2</td>
+<td>站点可用</td>
+<td>1) locked_out_user 登录</td>
+<td>提示 "Sorry, this user has been locked out."</td>
+<td><code>tests/test_login.py::test_login_failed[locked_out]</code></td>
+<td>web, negative</td>
+</tr>
+<tr>
+<td>TC-WEB-004</td>
+<td>登录</td>
+<td>密码错误被拦截</td>
+<td>反向</td>
+<td>P2</td>
+<td>站点可用</td>
+<td>1) 正确用户名 + 错误密码</td>
+<td>提示 "Username and password do not match…"</td>
+<td><code>tests/test_login.py::test_login_failed[wrong_password]</code></td>
+<td>web, negative</td>
+</tr>
+<tr>
+<td>TC-WEB-005</td>
+<td>登录</td>
+<td>密码为空被拦截</td>
+<td>反向</td>
+<td>P2</td>
+<td>站点可用</td>
+<td>1) 用户名 + 空密码</td>
+<td>提示 "Password is required"</td>
+<td><code>tests/test_login.py::test_login_failed[empty_password]</code></td>
+<td>web, negative</td>
+</tr>
+<tr>
+<td>TC-WEB-006</td>
+<td>登录</td>
+<td>用户名为空被拦截</td>
+<td>反向</td>
+<td>P2</td>
+<td>站点可用</td>
+<td>1) 空用户名 + 空密码</td>
+<td>提示 "Username is required"</td>
+<td><code>tests/test_login.py::test_login_failed[empty_username]</code></td>
+<td>web, negative</td>
+</tr>
+<tr>
+<td>TC-WEB-007</td>
+<td>购物车</td>
+<td>加购 → 角标/条目/移除全链路</td>
+<td>正向</td>
+<td>P0</td>
+<td>已登录</td>
+<td>1) 加购背包 2) 校验角标=1 3) 购物车条目=1、数量=1 4) 移除</td>
+<td>角标 1 → 购物车 1 件 → 移除后 0 件</td>
+<td><code>tests/test_login.py::test_add_to_cart_then_remove</code></td>
+<td>web, smoke</td>
+</tr>
+<tr>
+<td>TC-WEB-008</td>
+<td>商品列表</td>
+<td>名称升序排序</td>
+<td>参数化</td>
+<td>P1</td>
+<td>已登录</td>
+<td>1) 选择 "Name (A to Z)" 2) 读取名称列表</td>
+<td>名称为升序</td>
+<td><code>tests/test_inventory.py::test_sort_products[name_asc]</code></td>
+<td>web</td>
+</tr>
+<tr>
+<td>TC-WEB-009</td>
+<td>商品列表</td>
+<td>名称降序排序</td>
+<td>参数化</td>
+<td>P1</td>
+<td>已登录</td>
+<td>1) 选择 "Name (Z to A)"</td>
+<td>名称为降序</td>
+<td><code>tests/test_inventory.py::test_sort_products[name_desc]</code></td>
+<td>web</td>
+</tr>
+<tr>
+<td>TC-WEB-010</td>
+<td>商品列表</td>
+<td>价格升序排序</td>
+<td>参数化</td>
+<td>P1</td>
+<td>已登录</td>
+<td>1) 选择 "Price (low to high)"</td>
+<td>价格为升序</td>
+<td><code>tests/test_inventory.py::test_sort_products[price_asc]</code></td>
+<td>web</td>
+</tr>
+<tr>
+<td>TC-WEB-011</td>
+<td>商品列表</td>
+<td>价格降序排序</td>
+<td>参数化</td>
+<td>P1</td>
+<td>已登录</td>
+<td>1) 选择 "Price (high to low)"</td>
+<td>价格为降序</td>
+<td><code>tests/test_inventory.py::test_sort_products[price_desc]</code></td>
+<td>web</td>
+</tr>
+<tr>
+<td>TC-WEB-012</td>
+<td>商品列表</td>
+<td>多商品加购数量一致</td>
+<td>正向</td>
+<td>P0</td>
+<td>已登录</td>
+<td>1) 加购两件商品 2) 校验角标=2 3) 购物车条目=2</td>
+<td>角标 2；购物车 2 件</td>
+<td><code>tests/test_inventory.py::test_add_two_items_to_cart</code></td>
+<td>web, smoke</td>
+</tr>
+<tr>
+<td>TC-WEB-013</td>
+<td>商品详情</td>
+<td>详情页名称/价格与列表一致</td>
+<td>正向</td>
+<td>P1</td>
+<td>已登录</td>
+<td>1) 记录列表首项名称/价格 2) 进入详情页 3) 比对 4) 返回列表</td>
+<td>名称与价格一致；描述展示；可返回列表</td>
+<td><code>tests/test_inventory.py::test_product_detail_matches_list</code></td>
+<td>web</td>
+</tr>
+<tr>
+<td>TC-WEB-014</td>
+<td>商品列表</td>
+<td>列表页直接移除已加购商品</td>
+<td>正向</td>
+<td>P2</td>
+<td>已登录且已加购</td>
+<td>1) 列表页点击 Remove</td>
+<td>按钮恢复为 Add to cart；角标消失</td>
+<td><code>tests/test_inventory.py::test_remove_item_from_inventory_list</code></td>
+<td>web</td>
+</tr>
+<tr>
+<td>TC-WEB-015</td>
+<td>购物车</td>
+<td>空购物车状态</td>
+<td>正向/边界</td>
+<td>P2</td>
+<td>已登录未加购</td>
+<td>1) 直接进入购物车</td>
+<td>条目 0 且无角标</td>
+<td><code>tests/test_cart.py::test_empty_cart_state</code></td>
+<td>web</td>
+</tr>
+<tr>
+<td>TC-WEB-016</td>
+<td>购物车</td>
+<td>Continue Shopping 返回列表</td>
+<td>正向</td>
+<td>P2</td>
+<td>已登录且购物车非空</td>
+<td>1) 进入购物车 2) 点击 Continue Shopping</td>
+<td>返回商品列表且加购状态保留（角标 1）</td>
+<td><code>tests/test_cart.py::test_continue_shopping_returns_to_inventory</code></td>
+<td>web</td>
+</tr>
+<tr>
+<td>TC-WEB-017</td>
+<td>购物车</td>
+<td>两件商品中移除一件</td>
+<td>正向</td>
+<td>P1</td>
+<td>购物车有 2 件</td>
+<td>1) 移除背包 2) 校验剩余商品</td>
+<td>剩余 1 件且为 Bike Light；角标更新为 1</td>
+<td><code>tests/test_cart.py::test_remove_one_of_two_items</code></td>
+<td>web</td>
+</tr>
+<tr>
+<td>TC-WEB-018</td>
+<td>购物车</td>
+<td>移除最后一件后角标消失</td>
+<td>正向</td>
+<td>P1</td>
+<td>购物车有 1 件</td>
+<td>1) 移除唯一商品</td>
+<td>条目 0；角标消失（None）</td>
+<td><code>tests/test_cart.py::test_badge_disappears_after_removing_last_item</code></td>
+<td>web</td>
+</tr>
+<tr>
+<td>TC-WEB-019</td>
+<td>下单</td>
+<td>下单全流程 E2E</td>
+<td>正向</td>
+<td>P0</td>
+<td>已登录</td>
+<td>1) 加购 → 购物车 2) Checkout 3) 填信息 4) Continue 5) Finish</td>
+<td>进入完成页并提示 "Thank you for your order!"</td>
+<td><code>tests/test_checkout.py::test_checkout_happy_path</code></td>
+<td>web, smoke</td>
+</tr>
+<tr>
+<td>TC-WEB-020</td>
+<td>下单</td>
+<td>订单金额计算正确性</td>
+<td>正向/业务规则</td>
+<td>P1</td>
+<td>购物车含背包</td>
+<td>1) 进入订单总览 2) 读取小计/税费/总计</td>
+<td>小计=29.99；税费&gt;0；总计=小计+税费（±0.01）</td>
+<td><code>tests/test_checkout.py::test_checkout_totals_calculation</code></td>
+<td>web</td>
+</tr>
+<tr>
+<td>TC-WEB-021</td>
+<td>下单</td>
+<td>取消下单返回购物车</td>
+<td>正向</td>
+<td>P2</td>
+<td>已进入结算信息页</td>
+<td>1) 点击 Cancel</td>
+<td>返回购物车且商品保留</td>
+<td><code>tests/test_checkout.py::test_cancel_checkout_returns_to_cart</code></td>
+<td>web</td>
+</tr>
+<tr>
+<td>TC-WEB-022</td>
+<td>下单</td>
+<td>缺少 First Name 被拦截</td>
+<td>反向</td>
+<td>P2</td>
+<td>已进入结算信息页</td>
+<td>1) 姓名首字留空提交</td>
+<td>停留结算信息页；提示已渲染则含 "First Name is required"</td>
+<td><code>tests/test_checkout.py::test_checkout_required_fields[missing_first_name]</code></td>
+<td>web, negative</td>
+</tr>
+<tr>
+<td>TC-WEB-023</td>
+<td>下单</td>
+<td>缺少 Last Name 被拦截</td>
+<td>反向</td>
+<td>P2</td>
+<td>同上</td>
+<td>1) 姓留空提交</td>
+<td>停留结算信息页；提示已渲染则含 "Last Name is required"</td>
+<td><code>tests/test_checkout.py::test_checkout_required_fields[missing_last_name]</code></td>
+<td>web, negative</td>
+</tr>
+<tr>
+<td>TC-WEB-024</td>
+<td>下单</td>
+<td>缺少 Postal Code 被拦截</td>
+<td>反向</td>
+<td>P2</td>
+<td>同上</td>
+<td>1) 邮编留空提交</td>
+<td>停留结算信息页；提示已渲染则含 "Postal Code is required"</td>
+<td><code>tests/test_checkout.py::test_checkout_required_fields[missing_postal_code]</code></td>
+<td>web, negative</td>
+</tr>
+<tr>
+<td>TC-WEB-025</td>
+<td>访问控制</td>
+<td>未登录访问 inventory 被重定向</td>
+<td>反向/安全</td>
+<td>P1</td>
+<td>未登录</td>
+<td>1) 直接访问 <code>/inventory.html</code></td>
+<td>回到登录页；URL 不含受保护路径；提示已渲染则含 "You can only access"</td>
+<td><code>tests/test_auth_guard.py::test_direct_access_without_login_redirects[inventory]</code></td>
+<td>web, negative</td>
+</tr>
+<tr>
+<td>TC-WEB-026</td>
+<td>访问控制</td>
+<td>未登录访问 cart 被重定向</td>
+<td>反向/安全</td>
+<td>P1</td>
+<td>未登录</td>
+<td>1) 直接访问 <code>/cart.html</code></td>
+<td>同上</td>
+<td><code>tests/test_auth_guard.py::test_direct_access_without_login_redirects[cart]</code></td>
+<td>web, negative</td>
+</tr>
+<tr>
+<td>TC-WEB-027</td>
+<td>登录态</td>
+<td>退出登录回到登录页</td>
+<td>正向</td>
+<td>P2</td>
+<td>已登录</td>
+<td>1) 打开侧边菜单 2) 点击 Logout</td>
+<td>回到登录页（登录按钮可见，URL 不含 inventory）</td>
+<td><code>tests/test_auth_guard.py::test_logout_returns_to_login_page</code></td>
+<td>web</td>
+</tr>
+</tbody>
+</table>
+<h2>三、统计与执行</h2>
+<table>
+<thead>
+<tr>
+<th>统计项</th>
+<th>数量</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>总用例</td>
+<td>47</td>
+</tr>
+<tr>
+<td>接口 / Web</td>
+<td>20 / 27</td>
+</tr>
+<tr>
+<td>正向 / 反向</td>
+<td>33 / 14</td>
+</tr>
+<tr>
+<td>冒烟（smoke，核心主流程）</td>
+<td>5（TC-WEB-001、002、007、012、019）</td>
+</tr>
+<tr>
+<td>反向（negative）</td>
+<td>14（TC-API-002、006、017、018、020；TC-WEB-003~006、022~026）</td>
+</tr>
+<tr>
+<td>参数化 / 数据驱动用例</td>
+<td>21（接口 6 + Web 15）</td>
+</tr>
+<tr>
+<td>接口覆盖</td>
+<td>GET/POST/PUT/DELETE、200/404、状态三取值、中文/超长/非法入参、幂等覆盖、响应契约</td>
+</tr>
+<tr>
+<td>Web 覆盖</td>
+<td>登录正反向、排序 4 种、商品详情、购物车 5 种状态、下单 E2E、金额计算、取消下单、表单校验 3 种、访问控制 2 种、退出登录</td>
+</tr>
+</tbody>
+</table>
+<p>常用执行命令：</p>
+<pre><code class="language-bash">python -m pytest -m api          # 接口用例（20）
+python -m pytest -m web          # Web 用例（27）
+python -m pytest -m smoke        # 冒烟（5）
+python -m pytest -m negative     # 反向（14）
+python -m pytest tests -n 4      # 全量并行（47）
+</code></pre></body></html>

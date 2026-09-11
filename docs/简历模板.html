@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>简历 - 【姓名】</title>
+<style>
+  /* ===== 打印友好 A4 ===== */
+  @page { size: A4; margin: 14mm 16mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; color:#222; margin:0; background:#f3f4f6; }
+  .sheet { width: 210mm; min-height: 297mm; margin: 12px auto; background:#fff; padding: 12mm 14mm; box-shadow: 0 2px 10px rgba(0,0,0,.12); }
+  h1 { margin: 0 0 2px; font-size: 24px; }
+  .sub { color:#555; font-size: 13px; margin-bottom: 8px; }
+  h2 { font-size: 15px; border-left: 4px solid #2f6fed; padding-left: 8px; margin: 14px 0 6px; }
+  table.info td { padding: 1px 0; font-size: 13px; }
+  ul { margin: 4px 0 4px 18px; padding: 0; }
+  li { font-size: 13px; line-height: 1.65; }
+  .item { margin-bottom: 6px; }
+  .head-line { color:#888; font-size: 11px; margin-top: 6px; }
+  .tip { background:#fff7e6; border:1px dashed #f0b429; color:#7a5b00; font-size:12px; padding:8px 10px; margin:8px 0; }
+  @media print { body{background:#fff} .sheet{box-shadow:none;margin:0;width:auto;min-height:auto;padding:0} .no-print{display:none} }
+</style>
+</head>
+<body>
+<button class="no-print" onclick="window.print()" style="position:fixed;right:20px;top:16px;padding:8px 16px;border:none;background:#2f6fed;color:#fff;border-radius:6px;cursor:pointer;">🖨 打印 / 存为 PDF</button>
+<div class="sheet" contenteditable="true" spellcheck="false">
+  <!-- ↓↓↓ 整页可直接在浏览器里点击编辑，改完直接打印/导出 PDF ↓↓↓ -->
+  <h1>【姓名】</h1>
+  <div class="sub">求职意向：测试开发工程师 / 软件测试工程师（自动化方向）</div>
+  <table class="info">
+    <tr><td>📞 电话：【138-0000-0000】　✉️ 邮箱：【your@email.com】　📍 城市：【北京】</td></tr>
+    <tr><td>🎓 学历：【本科】·【某某大学】·【计算机/软件工程 等相关专业】· 【2027届】</td></tr>
+    <tr><td>🔗 GitHub：https://github.com/Oxob-hue/auto-test-framework　｜　在线测试报告：https://Oxob-hue.github.io/auto-test-framework/</td></tr>
+  </table>
+
+  <h2>教育背景</h2>
+  <div class="item">【学校】｜【专业】｜【起止时间】<br>【主修课程 / 成绩排名 / 奖学金（真实再写，可留空）】</div>
+
+  <h2>专业技能</h2>
+  <ul>
+    <li><b>Python</b>：熟练编写自动化脚本与框架，掌握类/装饰器/日志/配置文件处理等；</li>
+    <li><b>Pytest</b>：fixture、conftest、参数化与数据驱动、hook（失败自动取证）、marker 分层、xdist 并行、定向重试；</li>
+    <li><b>接口测试</b>：Requests（Session 复用 / 超时 / 日志封装）、jsonschema 结构校验、测试数据隔离与清理；</li>
+    <li><b>Web 自动化</b>：Selenium 4、Page Object、显式等待机制、跨浏览器（Edge / Chrome 无头）、React 场景稳定性处理、失败取证；</li>
+    <li><b>CI/CD 与工具</b>：Git、GitHub Actions（多 Job 编排 / 定时触发 / Pages 发布）、Allure 报告；</li>
+    <li><b>质量意识</b>：正反向 / 边界用例设计、冒烟分层、用例可重复执行、可观测性与测试文档化。</li>
+  </ul>
+
+  <h2>项目经历</h2>
+  <div class="item">
+    <b>全栈自动化测试框架（接口 + Web）</b>｜个人项目｜Python · Pytest · Requests · Selenium · Allure · GitHub Actions
+    <ul>
+      <li>独立搭建接口 + Web 双端自动化测试框架，覆盖 Petstore 接口与 SauceDemo Web，23 条用例全部通过（接口 12 + Web 11），并接入 GitHub Actions 持续集成与在线报告；</li>
+      <li>采用“用例层 → 页面/接口对象层 → 公共封装层 → 配置层”架构与 Page Object，正反向用例分离，以 marker 分层（api / web / smoke / negative）；</li>
+      <li>接口：Session 复用 + 统一超时 + “状态码 + 业务字段 + jsonschema”三层断言，覆盖增删改查、404 异常与 JSON 数据驱动；数据由 fixture 前置创建、finally 幂等清理、ID 随机化，保证可重复执行；</li>
+      <li>Web：覆盖登录正反向、购物车、商品排序、多商品加购、下单全流程 E2E 与表单校验；</li>
+      <li>解决 React 应用在 CI 环境下的稳定性问题（点击丢事件 / 受控输入丢失 / 水合竞态），通过“点击、输入后校验状态提交 + JS 兜底重试”，将“本地全绿、CI 必挂”收敛为 Chrome 无头 CI 全绿；</li>
+      <li>失败自动收集运行日志 + 页面截图 + DOM + 浏览器 Console；失败重试仅针对基础设施类异常，避免掩盖真实缺陷；</li>
+      <li>GitHub Actions：push / 每日定时 / 手动触发全量回归，测试通过自动发布 Allure 报告到 GitHub Pages；pytest-xdist 并行，全量回归约 40s；</li>
+      <li>沉淀测试设计说明、测试计划、测试报告模板、缺陷记录与踩坑复盘等文档。</li>
+    </ul>
+  </div>
+
+  <h2>实习 / 校园 / 其他经历（占位，真实再写）</h2>
+  <div class="item">【实习公司 / 岗位：做了什么、用什么、产出什么 —— STAR 写法】<br>【校园项目 / 竞赛 / 学生工作（可选）】</div>
+
+  <h2>自我评价</h2>
+  <div class="item">【示例】对测试开发有热情，能独立完成“用例设计 → 自动化实现 → CI 集成 → 报告产出”的闭环；注重用例稳定性与可观测性，遇到跨环境不稳定问题能依据失败证据快速定位并收敛；代码习惯良好，具备文档化与持续改进意识。</div>
+
+  <div class="head-line">更新：2026 年 9 月　·　简历篇幅建议控制在 1 页（可打印预览后删减）</div>
+</div>
+
+<div class="sheet no-print" style="min-height:auto;box-shadow:none;border:1px dashed #ccc;">
+  <div class="tip">使用说明：① 全页可点击直接编辑（【】内为占位，替换为真实信息）；
+  ② 编辑后点右上角“打印/存为 PDF”，可导出单页 A4；
+  ③ 投递前请用无痕窗口验证 GitHub 与在线报告链接可访问；未实际使用的技术不要写进技能栏。</div>
+</div>
+</body>
+</html>

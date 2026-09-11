@@ -6,11 +6,11 @@
 >
 > 集成 **Allure** 可视化报告，失败自动收集「日志 + 截图 + 页面源码」；
 > 内置**失败自动重试**（仅基础设施类异常）与 **GitHub Actions CI/CD 流水线**。
-> 当前全量用例 **23 个，全部通过**（接口 12 + Web 11）。
+> 当前全量用例 **47 个，全部通过**（接口 20 + Web 27）。
 
 ---
 
-## ✨ 项目亮点（面试自我介绍可直接引用）
+## ✨ 项目亮点
 
 1. **清晰的分层架构**：测试用例 → 页面/接口对象层 → 公共封装层 → 配置层，低耦合、易维护；
 2. **接口自动化工程化**：Session 复用 + 统一超时 + 请求/响应日志；**jsonschema 响应结构校验**；
@@ -66,27 +66,38 @@
 ├── pages/                       # Web 页面对象层
 │   ├── base_page.py             # 页面基类：显式等待与通用操作
 │   ├── login_page.py            # 登录页
-│   ├── inventory_page.py        # 商品列表页（含排序、多商品加购）
-│   ├── cart_page.py             # 购物车页
+│   ├── inventory_page.py        # 商品列表页（排序 / 详情跳转 / 列表移除 / 菜单退出）
+│   ├── product_detail_page.py   # 商品详情页
+│   ├── cart_page.py             # 购物车页（数量/名称/角标/继续购物/移除）
+│   ├── checkout_page.py         # 结算页（信息/金额/取消/完成）
 │   └── checkout_page.py         # 结算页（信息/总览/完成/表单校验）
 ├── tests/                       # 测试用例层（唯一的 conftest 全局夹具）
 │   ├── conftest.py              # driver(edge/chrome)/api/pet_api + 失败自动收集
 │   ├── test_pet.py              # 接口：增删改查 + schema 校验 + 异常 + 状态参数化
+│   ├── test_pet_contract.py     # 接口：健壮性与契约（边界/幂等/非法入参/响应契约）
 │   ├── test_pet_param.py        # 接口：JSON 数据驱动创建
 │   ├── test_login.py            # Web：登录正向/反向 + 购物车主流程
-│   ├── test_inventory.py        # Web：商品排序 / 多商品加购
-│   └── test_checkout.py         # Web：下单全流程 E2E + 表单校验异常
+│   ├── test_auth_guard.py       # Web：访问控制（未登录重定向）+ 退出登录
+│   ├── test_inventory.py        # Web：排序 4 种 / 详情一致性 / 多商品加购 / 列表移除
+│   ├── test_cart.py             # Web：购物车空态 / 继续购物 / 部分移除 / 角标消失
+│   └── test_checkout.py         # Web：下单 E2E + 金额计算 + 取消下单 + 表单校验
 ├── test_data/
 │   ├── pet_data.json            # 参数化测试数据
 │   └── pet_response_schema.json # 接口响应结构约束（jsonschema）
 ├── scripts/
 │   └── defect_probe.py          # 被测系统缺陷探测（真实取证，不参与回归）
-├── docs/                        # 求职展示文档
+├── docs/                        # 测试与求职文档
+│   ├── 测试计划.md               # 测试计划（项目版：范围/策略/环境/风险/排期）
+│   ├── 测试用例表.md             # 全量 47 条用例明细（编号/步骤/预期/实现位置/marker）
 │   ├── 测试设计说明.md           # 设计思路（等价类/正反向/数据/稳定性）
-│   ├── 缺陷与踩坑记录.md         # 框架自身踩坑复盘 + 缺陷模板
+│   ├── 测试报告.md               # 测试报告（真实执行结果与结论）
+│   ├── 测试报告模板.md           # 报告模板（可复用于其他项目）
+│   ├── 缺陷记录表.md             # 缺陷记录（框架 4 条 + 被测系统 2 条）
+│   ├── 缺陷与踩坑记录.md         # 踩坑复盘（含跨浏览器稳定性完整排障过程）
 │   ├── 缺陷复现演示.md           # 被测系统缺陷（problem_user 取证）
-│   ├── 测试计划.md               # 测试计划模板（范围/策略/风险/排期）
-│   ├── 测试报告模板.md           # 报告模板（含真实统计与提速数据）
+│   ├── 简历项目描述.md           # 简历可粘贴文案 + 技能清单 + 红线提醒
+│   ├── 简历模板.html             # 可填写/可打印（导出 PDF）的简历模板
+│   ├── 面试自我介绍与项目讲解话术.md  # 30 秒自我介绍 + 2 分钟讲解 + 追问速答
 │   └── GitHub推送与CI首次运行指南.md  # PAT 推送 + 首次跑绿步骤
 ├── config.ini                   # 环境配置（唯一配置入口）
 ├── pytest.ini                   # Pytest 配置（markers/addopts/重试策略）
@@ -223,37 +234,55 @@ allure open allure-report
 ## ✅ 当前回归结果（本地全量）
 
 ```
-collected 23 items
-tests\test_checkout.py  ..      tests\test_pet.py .........
-tests\test_inventory.py ..      tests\test_pet_param.py ...
-tests\test_login.py .......
+collected 47 items
+tests\test_auth_guard.py ...     tests\test_pet.py .........
+tests\test_cart.py ....          tests\test_pet_contract.py ........
+tests\test_checkout.py ......    tests\test_pet_param.py ...
+tests\test_inventory.py .......  tests\test_login.py .......
 
-========================= 23 passed in 63.93s (0:01:03) =========================
+=================== 47 passed, 1 rerun in 62.14s (0:01:02) ===================
 ```
 
-Allure 摘要：passed=23, failed=0, broken=0, skipped=0。
-GitHub Actions 流水线产物：`allure-report` Artifact（可下载或部署到 GitHub Pages）。
+Allure 摘要：passed=47, failed=0, broken=0, skipped=0。
+GitHub Actions 流水线产物：`allure-report` Artifact + GitHub Pages 在线报告。
 
 ### ⚡ 执行效率（并发优化）
 
 | 执行方式 | 耗时 | 说明 |
 |----------|------|------|
-| 并行执行 `pytest tests -n 4` | 40.40s | pytest-xdist，4 worker 并发（含 React 稳健等待加固后实测） |
-| 顺序执行（默认，参考） | 63.93s | 单进程逐条执行（加固前实测；加入稳健等待后会更慢，批量回归建议 `-n 4`） |
+| 并行执行 `pytest tests -n 4` | 62.14s | pytest-xdist，4 worker 并发（47 条全量，含 1 次基础设施类重试） |
+| Web 子集顺序执行 | 176.29s | 27 条 Web 用例单进程逐条执行 |
 
 > 接口用例以网络等待为主、Web 用例浏览器会话相互独立，天然适合并行；
 > 全量统计与提速数据见 [`docs/测试报告模板.md`](docs/测试报告模板.md)。
 
 ---
 
-## 📚 求职展示文档
+## 📚 测试流程与求职文档
 
-- [`docs/测试设计说明.md`](docs/测试设计说明.md)：分层思路、等价类/正反向/边界设计、数据策略、稳定性设计、用例清单；
-- [`docs/缺陷与踩坑记录.md`](docs/缺陷与踩坑记录.md)：缺陷记录模板 + 3 个真实踩坑复盘（PO 缩进 bug、logger 写入已关闭流、重复 conftest）+ 面试追问速答；
-- [`docs/缺陷复现演示.md`](docs/缺陷复现演示.md)：被测系统（SauceDemo problem_user）**真实取证**的 2 个缺陷（图片错乱、排序失效），回答"你测出过什么问题"；
-- [`docs/测试计划.md`](docs/测试计划.md)：测试计划模板（范围/策略/风险/排期）；
-- [`docs/测试报告模板.md`](docs/测试报告模板.md)：测试报告模板（含真实统计与提速数据）；
+**测试流程文档（覆盖"计划 → 用例 → 执行 → 缺陷 → 报告"完整闭环）**
+- [`docs/测试计划.md`](docs/测试计划.md)：项目版测试计划（范围 47 条、策略、环境、准入准出、风险应对、阶段安排）；
+- [`docs/测试用例表.md`](docs/测试用例表.md)：全量 47 条用例明细（编号 / 类型 / 优先级 / 前置 / 步骤 / 预期 / 代码位置 / marker）；
+- [`docs/测试设计说明.md`](docs/测试设计说明.md)：等价类与边界、正反向分离、数据策略、稳定性与可观测性设计；
+- [`docs/测试报告.md`](docs/测试报告.md)：真实执行报告（47/47 通过、分模块结果、缺陷统计、风险遗留、结论建议）；
+- [`docs/缺陷记录表.md`](docs/缺陷记录表.md)：缺陷记录（框架自身 4 条已修复 + 被测系统 2 条已取证）；
+- [`docs/测试报告模板.md`](docs/测试报告模板.md)：可复用的报告模板。
+
+**问题定位与复盘**
+- [`docs/缺陷与踩坑记录.md`](docs/缺陷与踩坑记录.md)：跨浏览器稳定性完整排障过程 + PO 缩进 / 日志流 / 重复 conftest 复盘 + 面试追问速答；
+- [`docs/缺陷复现演示.md`](docs/缺陷复现演示.md)：被测系统（SauceDemo problem_user）真实取证的 2 个缺陷。
+
+**求职材料**
+- [`docs/简历项目描述.md`](docs/简历项目描述.md)：可粘贴的简历项目经历 + 技能清单 + 红线提醒；
+- [`docs/简历模板.html`](docs/简历模板.html)：可填写、可打印导出 PDF 的简历模板；
+- [`docs/面试自我介绍与项目讲解话术.md`](docs/面试自我介绍与项目讲解话术.md)：30 秒自我介绍 + 2 分钟项目讲解 + 追问速答；
 - [`docs/GitHub推送与CI首次运行指南.md`](docs/GitHub推送与CI首次运行指南.md)：PAT 推送 + 首次 CI 跑绿步骤。
+
+**文档导出（Excel / PDF，便于发给面试官或打印）**
+```bash
+python scripts/export_docs.py   # Markdown → docs/export/测试用例表.xlsx、.csv 与 html/
+python scripts/print_pdf.py     # html/ → docs/export/测试计划.pdf、测试用例表.pdf、测试报告.pdf
+```
 
 ## 📝 项目产出与学习路线
 

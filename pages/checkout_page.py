@@ -4,22 +4,29 @@
   checkout-step-one（填写收货信息） → checkout-step-two（订单总览） → checkout-complete（下单完成）
 因三个页面由同一个页面对象按步骤推进即可完成，故合并封装为 CheckoutPage。
 """
+import re
+
 from selenium.webdriver.common.by import By
 
 from pages.base_page import BasePage
 
 
 class CheckoutPage(BasePage):
-    """结算相关页面：填写信息、确认订单、完成下单。"""
+    """结算相关页面：填写信息、查看金额、确认订单、取消订单、完成下单。"""
 
     FIRST_NAME_INPUT = (By.ID, "first-name")
     LAST_NAME_INPUT = (By.ID, "last-name")
     POSTAL_CODE_INPUT = (By.ID, "postal-code")
     CONTINUE_BUTTON = (By.ID, "continue")
+    CANCEL_BUTTON = (By.ID, "cancel")
     FINISH_BUTTON = (By.ID, "finish")
     COMPLETE_HEADER = (By.CLASS_NAME, "complete-header")
     # 错误提示容器（不限标签，兼容 h3/div 渲染差异）
     ERROR_MESSAGE = (By.CSS_SELECTOR, "[data-test='error']")
+    # 订单总览页金额
+    ITEM_TOTAL = (By.CLASS_NAME, "summary_subtotal_label")
+    TAX = (By.CLASS_NAME, "summary_tax_label")
+    TOTAL = (By.CLASS_NAME, "summary_total_label")
 
     def fill_customer_info(self, first_name: str, last_name: str, postal_code: str) -> None:
         """填写收货人姓名与邮编。"""
@@ -44,6 +51,14 @@ class CheckoutPage(BasePage):
                          "return location.pathname.includes('checkout-complete')",
                          "跳转下单完成页")
 
+    def cancel_order(self) -> "CartPage":
+        """信息填写页 → 点击 Cancel 返回购物车页。"""
+        from pages.cart_page import CartPage  # 局部导入避免循环依赖
+        self.click_until(self.CANCEL_BUTTON,
+                         "return location.pathname.includes('/cart')",
+                         "取消下单返回购物车")
+        return CartPage(self.driver)
+
     def get_complete_header(self) -> str:
         """下单成功后的提示文案。"""
         return self.get_text(self.COMPLETE_HEADER)
@@ -57,3 +72,20 @@ class CheckoutPage(BasePage):
         if self.is_element_visible(self.ERROR_MESSAGE, timeout=timeout):
             return self.get_text(self.ERROR_MESSAGE)
         return None
+
+    # ---------------- 订单金额 ----------------
+    @staticmethod
+    def _parse_amount(text: str) -> float:
+        """从 'Item total: $29.99' 之类的文案中解析金额。"""
+        match = re.search(r"\$([\d.]+)", text)
+        assert match, f"未能从文案解析金额: {text!r}"
+        return float(match.group(1))
+
+    def get_item_total(self) -> float:
+        return self._parse_amount(self.get_text(self.ITEM_TOTAL))
+
+    def get_tax(self) -> float:
+        return self._parse_amount(self.get_text(self.TAX))
+
+    def get_total(self) -> float:
+        return self._parse_amount(self.get_text(self.TOTAL))

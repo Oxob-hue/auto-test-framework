@@ -1,7 +1,6 @@
-"""Web 端到端用例：完整下单流程（SauceDemo）。
+"""Web 用例：下单流程与结算校验（SauceDemo）。
 
-覆盖：登录 → 添加商品 → 进入购物车 → 填写收货信息 → 订单总览 → 下单完成，
-是面试中最能体现“全流程业务理解 + 页面对象封装”的核心用例。
+覆盖：完整下单 E2E、订单金额计算、取消下单、表单必填校验（三种缺失场景）。
 """
 import allure
 import pytest
@@ -15,6 +14,20 @@ pytestmark = [
     allure.epic("Web 自动化"),
     allure.feature("下单全流程"),
 ]
+
+BACKPACK_PRICE = 29.99
+
+
+def _goto_checkout_step_one(driver, base_url):
+    """公共前置：登录 → 加购背包 → 进入购物车 → 进入结算信息页。"""
+    login_page = LoginPage(driver)
+    login_page.open_url(base_url)
+    login_page.login("standard_user", "secret_sauce")
+
+    inventory_page = InventoryPage(driver)
+    inventory_page.add_backpack_to_cart()
+    cart_page = inventory_page.go_to_cart()
+    return cart_page.click_checkout()
 
 
 @allure.story("下单成功主流程")
@@ -47,32 +60,65 @@ def test_checkout_happy_path(driver, base_url):
             "未出现下单成功提示"
 
 
-@allure.story("下单表单校验异常")
+@allure.story("订单金额计算")
+@allure.severity(allure.severity_level.CRITICAL)
+def test_checkout_totals_calculation(driver, base_url):
+    """订单总览页金额应满足：商品小计正确、税费>0、总计 = 小计 + 税费。"""
+    with allure.step("进入结算信息页并填写收货信息"):
+        checkout_page = _goto_checkout_step_one(driver, base_url)
+        checkout_page.fill_customer_info("San", "Zhang", "100000")
+        checkout_page.continue_to_overview()
+
+    with allure.step("读取订单总览金额"):
+        item_total = checkout_page.get_item_total()
+        tax = checkout_page.get_tax()
+        total = checkout_page.get_total()
+
+    with allure.step("断言金额计算正确"):
+        assert abs(item_total - BACKPACK_PRICE) < 0.01, \
+            f"商品小计应为 {BACKPACK_PRICE}，实际 {item_total}"
+        assert tax > 0, f"税费应大于 0，实际 {tax}"
+        assert abs(total - (item_total + tax)) < 0.01, \
+            f"总计({total}) 应等于 小计({item_total}) + 税费({tax})"
+
+
+@allure.story("取消下单")
+@allure.severity(allure.severity_level.NORMAL)
+def test_cancel_checkout_returns_to_cart(driver, base_url):
+    """在结算信息页点击 Cancel：返回购物车且已加购商品仍在。"""
+    with allure.step("进入结算信息页"):
+        checkout_page = _goto_checkout_step_one(driver, base_url)
+
+    with allure.step("点击 Cancel 取消下单"):
+        cart_page = checkout_page.cancel_order()
+
+    with allure.step("断言回到购物车且商品保留"):
+        assert cart_page.get_cart_item_count() == 1, "取消后购物车商品应保留"
+        assert cart_page.get_item_names() == ["Sauce Labs Backpack"], \
+            f"购物车商品不正确: {cart_page.get_item_names()}"
+
+
+@allure.story("下单表单必填校验")
 @allure.severity(allure.severity_level.NORMAL)
 @pytest.mark.negative
-def test_checkout_requires_postal_code(driver, base_url):
-    """反向：收货信息缺少邮编时，点击 Continue 应被拦截并提示。"""
-    with allure.step("登录、加购并进入结算页"):
-        login_page = LoginPage(driver)
-        login_page.open_url(base_url)
-        login_page.login("standard_user", "secret_sauce")
+@pytest.mark.parametrize("first_name,last_name,postal_code,expected_msg", [
+    ("", "Zhang", "100000", "First Name is required"),
+    ("San", "", "100000", "Last Name is required"),
+    ("San", "Zhang", "", "Postal Code is required"),
+], ids=["missing_first_name", "missing_last_name", "missing_postal_code"])
+def test_checkout_required_fields(driver, base_url,
+                                  first_name, last_name, postal_code, expected_msg):
+    """反向：姓名/邮编任一必填项缺失时应被拦截，停留在结算信息页。"""
+    with allure.step("进入结算信息页"):
+        checkout_page = _goto_checkout_step_one(driver, base_url)
 
-        inventory_page = InventoryPage(driver)
-        inventory_page.add_backpack_to_cart()
-        cart_page = inventory_page.go_to_cart()
-        checkout_page = cart_page.click_checkout()
-
-    with allure.step("填写姓名但留空邮编并提交"):
-        checkout_page.fill_customer_info("San", "Zhang", "")
+    with allure.step("填写不完整信息并提交"):
+        checkout_page.fill_customer_info(first_name, last_name, postal_code)
         checkout_page.submit_form()
 
-    with allure.step("断言校验拦截：停留在填写页，且提示邮编必填"):
-        # 业务规则校验（与浏览器渲染无关）：缺少邮编必须被拦截，不能进入订单总览页
+    with allure.step("断言校验拦截（未进入订单总览页）"):
         assert "checkout-step-one" in checkout_page.get_current_url(), \
-            "缺少邮编时不应进入订单总览页"
-        # 错误文案校验：提示已渲染时校验内容（个别浏览器/无头环境下提示框可能不渲染，
-        # 此时以上“未跳转”断言已能证明表单校验生效）
+            f"缺失必填项({expected_msg})时不应进入订单总览页"
         error_msg = checkout_page.try_get_error_message()
         if error_msg:
-            assert "Postal Code is required" in error_msg, \
-                f"错误提示内容不符: {error_msg!r}"
+            assert expected_msg in error_msg, f"错误提示内容不符: {error_msg!r}"

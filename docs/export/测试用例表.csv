@@ -1,0 +1,64 @@
+﻿【一、接口用例（20 条｜Petstore）】
+用例编号,模块,用例标题,类型,优先级,前置条件,主要步骤,预期结果,自动化实现,marker
+TC-API-001,宠物管理,按 ID 查询已创建的宠物,正向,P1,前置 fixture 已创建宠物（id 随机）,1) `GET /pet/{id}` 2) 校验状态码与字段 3) jsonschema 结构校验,状态码 200；返回 `id`/`name`/`status` 与创建时一致；结构符合 schema,`tests/test_pet.py::test_get_pet_by_id`,api
+TC-API-002,异常场景,查询不存在的宠物,反向,P2,无,1) 生成随机不存在 ID 2) `GET /pet/{id}`,返回 404（或 400）,`tests/test_pet.py::test_get_non_exist_pet`,"api, negative"
+TC-API-003,宠物管理,创建宠物,正向,P1,无,1) `POST /pet` 2) 校验返回体 3) 清理数据,状态码 200；`id/name/status` 与请求一致；结构符合 schema,`tests/test_pet.py::test_create_pet`,api
+TC-API-004,宠物管理,整体更新宠物（PUT）,正向,P1,已创建宠物,1) `PUT /pet` 修改 name/status 2) 再次 `GET` 校验,更新成功；再次查询可见新名称与新状态,`tests/test_pet.py::test_update_pet`,api
+TC-API-005,宠物管理,删除宠物并验证不可再查,正向,P1,已创建宠物,1) `DELETE /pet/{id}` 2) 再次 `GET /pet/{id}`,删除返回 200；再次查询返回 404,`tests/test_pet.py::test_delete_pet`,api
+TC-API-006,异常场景,删除不存在的宠物（幂等）,反向,P2,无,1) 随机不存在 ID 2) `DELETE /pet/{id}`,返回 404（或 400），不产生副作用,`tests/test_pet.py::test_delete_non_exist_pet`,"api, negative"
+TC-API-007,状态查询,按状态 available 查询,参数化,P1,无,1) `GET /pet/findByStatus?status=available` 2) 校验列表项状态,状态码 200；返回列表且每项 `status=available`,`tests/test_pet.py::test_find_pets_by_status[available]`,api
+TC-API-008,状态查询,按状态 pending 查询,参数化,P1,无,同上，status=pending,状态码 200；列表项 `status=pending`,`tests/test_pet.py::test_find_pets_by_status[pending]`,api
+TC-API-009,状态查询,按状态 sold 查询,参数化,P1,无,同上，status=sold,状态码 200；列表项 `status=sold`,`tests/test_pet.py::test_find_pets_by_status[sold]`,api
+TC-API-010,数据驱动,JSON 数据创建（available）,数据驱动,P1,数据文件 `test_data/pet_data.json`,1) 读取 JSON 用例 2) `POST /pet` 3) 校验 4) 清理,创建成功；`name/status` 与数据一致,`tests/test_pet_param.py::test_create_pet_from_json[json_dog_available]`,api
+TC-API-011,数据驱动,JSON 数据创建（pending）,数据驱动,P1,同上,同上,同上,`tests/test_pet_param.py::test_create_pet_from_json[json_dog_pending]`,api
+TC-API-012,数据驱动,JSON 数据创建（sold）,数据驱动,P1,同上,同上,同上,`tests/test_pet_param.py::test_create_pet_from_json[json_dog_sold]`,api
+TC-API-013,边界数据,中文 + 表情符号名称往返一致,正向/边界,P1,无,1) 以 `测试宠物-🐶_v1` 创建 2) `GET` 回读,创建 200；回读名称与写入完全一致（编码正确）,`tests/test_pet_contract.py::test_create_pet_with_chinese_and_symbol_name_roundtrip`,api
+TC-API-014,边界数据,超长名称（256 字符）创建与回读,正向/边界,P2,无,1) 以 256 字符名称创建 2) `GET` 回读,不 5xx；回读名称非空且长度合理（≥200）,`tests/test_pet_contract.py::test_create_pet_with_long_name`,api
+TC-API-015,幂等与覆盖,同一 ID 重复创建以最后一次为准,正向/契约,P1,无,1) 同 ID 创建 name=first 2) 再创建 name=second 3) `GET`,第二次创建 200；回读名称为 `second_version`,`tests/test_pet_contract.py::test_create_same_id_twice_second_wins`,api
+TC-API-016,幂等与覆盖,PUT 不存在 ID 的行为自洽性,契约,P2,无,1) `PUT /pet`（随机不存在 ID）2) 依返回码校验是否可查到,200 → 可查到且字段一致；404 → 查不到（行为自洽）,`tests/test_pet_contract.py::test_update_non_exist_pet_contract`,api
+TC-API-017,异常入参,非法 status 取值不应 5xx,反向,P2,无,1) 以 `status=invalid_status` 创建 2) 校验响应与回读,状态码 < 500；响应可解析；可回读,`tests/test_pet_contract.py::test_invalid_status_value_not_5xx`,"api, negative"
+TC-API-018,异常入参,缺少必填字段不应 5xx,反向,P2,无,"1) `POST /pet` 仅提交 `{""id"": x}` 2) 校验响应",状态码 < 500；返回体可解析（不崩溃）,`tests/test_pet_contract.py::test_missing_required_fields_not_5xx`,"api, negative"
+TC-API-019,响应契约,Content-Type 与响应耗时契约,契约,P2,已创建宠物,1) `GET /pet/{id}` 2) 校验响应头与耗时,`Content-Type` 含 `application/json`；耗时 < 5s,`tests/test_pet_contract.py::test_response_contract_content_type_and_latency`,api
+TC-API-020,异常入参,findByStatus 非法状态值,反向,P2,无,1) `GET /pet/findByStatus?status=__invalid_status__`,返回 200（空列表）或 400；不 5xx,`tests/test_pet_contract.py::test_find_by_status_invalid_value`,"api, negative"
+
+【二、Web 用例（27 条｜SauceDemo）】
+用例编号,模块,用例标题,类型,优先级,前置条件,主要步骤,预期结果,自动化实现,marker
+TC-WEB-001,登录,standard_user 正常登录,正向,P0,站点可用,1) 打开登录页 2) 输入正确账号密码 3) 登录,进入商品列表页，标题 Products,`tests/test_login.py::test_login_success[standard_user]`,"web, smoke"
+TC-WEB-002,登录,problem_user 正常登录,正向,P1,站点可用,同上（problem_user）,进入商品列表页，标题 Products,`tests/test_login.py::test_login_success[problem_user]`,"web, smoke"
+TC-WEB-003,登录,锁定账号登录被拦截,反向,P2,站点可用,1) locked_out_user 登录,"提示 ""Sorry, this user has been locked out.""",`tests/test_login.py::test_login_failed[locked_out]`,"web, negative"
+TC-WEB-004,登录,密码错误被拦截,反向,P2,站点可用,1) 正确用户名 + 错误密码,"提示 ""Username and password do not match…""",`tests/test_login.py::test_login_failed[wrong_password]`,"web, negative"
+TC-WEB-005,登录,密码为空被拦截,反向,P2,站点可用,1) 用户名 + 空密码,"提示 ""Password is required""",`tests/test_login.py::test_login_failed[empty_password]`,"web, negative"
+TC-WEB-006,登录,用户名为空被拦截,反向,P2,站点可用,1) 空用户名 + 空密码,"提示 ""Username is required""",`tests/test_login.py::test_login_failed[empty_username]`,"web, negative"
+TC-WEB-007,购物车,加购 → 角标/条目/移除全链路,正向,P0,已登录,1) 加购背包 2) 校验角标=1 3) 购物车条目=1、数量=1 4) 移除,角标 1 → 购物车 1 件 → 移除后 0 件,`tests/test_login.py::test_add_to_cart_then_remove`,"web, smoke"
+TC-WEB-008,商品列表,名称升序排序,参数化,P1,已登录,"1) 选择 ""Name (A to Z)"" 2) 读取名称列表",名称为升序,`tests/test_inventory.py::test_sort_products[name_asc]`,web
+TC-WEB-009,商品列表,名称降序排序,参数化,P1,已登录,"1) 选择 ""Name (Z to A)""",名称为降序,`tests/test_inventory.py::test_sort_products[name_desc]`,web
+TC-WEB-010,商品列表,价格升序排序,参数化,P1,已登录,"1) 选择 ""Price (low to high)""",价格为升序,`tests/test_inventory.py::test_sort_products[price_asc]`,web
+TC-WEB-011,商品列表,价格降序排序,参数化,P1,已登录,"1) 选择 ""Price (high to low)""",价格为降序,`tests/test_inventory.py::test_sort_products[price_desc]`,web
+TC-WEB-012,商品列表,多商品加购数量一致,正向,P0,已登录,1) 加购两件商品 2) 校验角标=2 3) 购物车条目=2,角标 2；购物车 2 件,`tests/test_inventory.py::test_add_two_items_to_cart`,"web, smoke"
+TC-WEB-013,商品详情,详情页名称/价格与列表一致,正向,P1,已登录,1) 记录列表首项名称/价格 2) 进入详情页 3) 比对 4) 返回列表,名称与价格一致；描述展示；可返回列表,`tests/test_inventory.py::test_product_detail_matches_list`,web
+TC-WEB-014,商品列表,列表页直接移除已加购商品,正向,P2,已登录且已加购,1) 列表页点击 Remove,按钮恢复为 Add to cart；角标消失,`tests/test_inventory.py::test_remove_item_from_inventory_list`,web
+TC-WEB-015,购物车,空购物车状态,正向/边界,P2,已登录未加购,1) 直接进入购物车,条目 0 且无角标,`tests/test_cart.py::test_empty_cart_state`,web
+TC-WEB-016,购物车,Continue Shopping 返回列表,正向,P2,已登录且购物车非空,1) 进入购物车 2) 点击 Continue Shopping,返回商品列表且加购状态保留（角标 1）,`tests/test_cart.py::test_continue_shopping_returns_to_inventory`,web
+TC-WEB-017,购物车,两件商品中移除一件,正向,P1,购物车有 2 件,1) 移除背包 2) 校验剩余商品,剩余 1 件且为 Bike Light；角标更新为 1,`tests/test_cart.py::test_remove_one_of_two_items`,web
+TC-WEB-018,购物车,移除最后一件后角标消失,正向,P1,购物车有 1 件,1) 移除唯一商品,条目 0；角标消失（None）,`tests/test_cart.py::test_badge_disappears_after_removing_last_item`,web
+TC-WEB-019,下单,下单全流程 E2E,正向,P0,已登录,1) 加购 → 购物车 2) Checkout 3) 填信息 4) Continue 5) Finish,"进入完成页并提示 ""Thank you for your order!""",`tests/test_checkout.py::test_checkout_happy_path`,"web, smoke"
+TC-WEB-020,下单,订单金额计算正确性,正向/业务规则,P1,购物车含背包,1) 进入订单总览 2) 读取小计/税费/总计,小计=29.99；税费>0；总计=小计+税费（±0.01）,`tests/test_checkout.py::test_checkout_totals_calculation`,web
+TC-WEB-021,下单,取消下单返回购物车,正向,P2,已进入结算信息页,1) 点击 Cancel,返回购物车且商品保留,`tests/test_checkout.py::test_cancel_checkout_returns_to_cart`,web
+TC-WEB-022,下单,缺少 First Name 被拦截,反向,P2,已进入结算信息页,1) 姓名首字留空提交,"停留结算信息页；提示已渲染则含 ""First Name is required""",`tests/test_checkout.py::test_checkout_required_fields[missing_first_name]`,"web, negative"
+TC-WEB-023,下单,缺少 Last Name 被拦截,反向,P2,同上,1) 姓留空提交,"停留结算信息页；提示已渲染则含 ""Last Name is required""",`tests/test_checkout.py::test_checkout_required_fields[missing_last_name]`,"web, negative"
+TC-WEB-024,下单,缺少 Postal Code 被拦截,反向,P2,同上,1) 邮编留空提交,"停留结算信息页；提示已渲染则含 ""Postal Code is required""",`tests/test_checkout.py::test_checkout_required_fields[missing_postal_code]`,"web, negative"
+TC-WEB-025,访问控制,未登录访问 inventory 被重定向,反向/安全,P1,未登录,1) 直接访问 `/inventory.html`,"回到登录页；URL 不含受保护路径；提示已渲染则含 ""You can only access""",`tests/test_auth_guard.py::test_direct_access_without_login_redirects[inventory]`,"web, negative"
+TC-WEB-026,访问控制,未登录访问 cart 被重定向,反向/安全,P1,未登录,1) 直接访问 `/cart.html`,同上,`tests/test_auth_guard.py::test_direct_access_without_login_redirects[cart]`,"web, negative"
+TC-WEB-027,登录态,退出登录回到登录页,正向,P2,已登录,1) 打开侧边菜单 2) 点击 Logout,回到登录页（登录按钮可见，URL 不含 inventory）,`tests/test_auth_guard.py::test_logout_returns_to_login_page`,web
+
+【三、统计与执行】
+统计项,数量
+总用例,47
+接口 / Web,20 / 27
+正向 / 反向,33 / 14
+冒烟（smoke，核心主流程）,5（TC-WEB-001、002、007、012、019）
+反向（negative）,14（TC-API-002、006、017、018、020；TC-WEB-003~006、022~026）
+参数化 / 数据驱动用例,21（接口 6 + Web 15）
+接口覆盖,GET/POST/PUT/DELETE、200/404、状态三取值、中文/超长/非法入参、幂等覆盖、响应契约
+Web 覆盖,登录正反向、排序 4 种、商品详情、购物车 5 种状态、下单 E2E、金额计算、取消下单、表单校验 3 种、访问控制 2 种、退出登录
+
