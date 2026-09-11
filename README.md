@@ -251,6 +251,7 @@ GitHub Actions 流水线产物：`allure-report` Artifact + GitHub Pages 在线�
 | 执行方式 | 耗时 | 说明 |
 |----------|------|------|
 | 并行执行 `pytest tests -n 4` | 62.14s | pytest-xdist，4 worker 并发（47 条全量，含 1 次基础设施类重试） |
+| 无头全量（近似 CI） | 191.12s | 单进程 + Edge 无头，47 条全部通过（运行条件与 CI 最接近） |
 | Web 子集顺序执行 | 176.29s | 27 条 Web 用例单进程逐条执行 |
 
 > 接口用例以网络等待为主、Web 用例浏览器会话相互独立，天然适合并行；

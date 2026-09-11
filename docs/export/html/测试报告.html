@@ -57,6 +57,7 @@ ul, ol { margin: 4px 0 4px 20px; padding: 0; }
 <tr>
 <th>指标</th>
 <th>本地全量（并行 -n 4）</th>
+<th>本地无头（近似 CI）</th>
 <th>本地 Web 子集</th>
 <th>CI（GitHub Actions）</th>
 </tr>
@@ -65,11 +66,13 @@ ul, ol { margin: 4px 0 4px 20px; padding: 0; }
 <tr>
 <td>用例总数</td>
 <td>47</td>
+<td>47</td>
 <td>27</td>
 <td>47（待本轮复验；上一轮 23 条全绿）</td>
 </tr>
 <tr>
 <td>通过</td>
+<td>47</td>
 <td>47</td>
 <td>27</td>
 <td>—</td>
@@ -78,10 +81,12 @@ ul, ol { margin: 4px 0 4px 20px; padding: 0; }
 <td>失败 / 中断 / 跳过</td>
 <td>0 / 0 / 0</td>
 <td>0 / 0 / 0</td>
+<td>0 / 0 / 0</td>
 <td>—</td>
 </tr>
 <tr>
 <td>通过率</td>
+<td>100%</td>
 <td>100%</td>
 <td>100%</td>
 <td>—</td>
@@ -89,6 +94,7 @@ ul, ol { margin: 4px 0 4px 20px; padding: 0; }
 <tr>
 <td>耗时</td>
 <td>62.14s（含 1 次重试）</td>
+<td>191.12s</td>
 <td>176.29s（顺序）</td>
 <td>待记录</td>
 </tr>
@@ -96,12 +102,15 @@ ul, ol { margin: 4px 0 4px 20px; padding: 0; }
 <td>报告</td>
 <td>Allure（本地 <code>allure open allure-report</code>）</td>
 <td>同左</td>
+<td>同左</td>
 <td>Artifact + GitHub Pages 在线报告</td>
 </tr>
 </tbody>
 </table>
 <blockquote>
-<p>说明：本轮为用例体量扩充（23 → 47 条），本地已完成全量验证；CI 结果以推送后的流水线为准。</p>
+<p>说明：本轮为用例体量扩充（23 → 47 条），本地已完成两种模式全量验证
+（并行 47/47、无头 47/47，后者运行条件与 CI 的 Chrome 无头最接近）；
+CI 结果以推送后的流水线为准（本轮推送时 GitHub 网络不可达，待网络恢复后复验）。</p>
 </blockquote>
 <h2>2. 分模块结果</h2>
 <table>
@@ -280,11 +289,11 @@ ul, ol { margin: 4px 0 4px 20px; padding: 0; }
 </tr>
 <tr>
 <td>跨环境一致性</td>
-<td>同一套用例在本地 Edge 与 CI Chrome 无头均通过（环境变量切换浏览器 / 无头）</td>
+<td>同一套用例在本地 Edge（有头/无头）下均通过（47/47）；CI Chrome 无头此前已验证机制有效（环境变量切换浏览器 / 无头）</td>
 </tr>
 <tr>
 <td>并行执行</td>
-<td><code>pytest -n 4</code> 全量 62.14s（顺序执行约 1 倍~2 倍于此）</td>
+<td><code>pytest -n 4</code> 全量 62.14s；单进程无头全量 191.12s</td>
 </tr>
 <tr>
 <td>重复执行</td>
