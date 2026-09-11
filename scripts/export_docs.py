@@ -152,6 +152,14 @@ def main() -> int:
         if src.exists():
             print("HTML:", md_to_html(src).relative_to(ROOT))
 
+    # 简历模板直接复用（已是打印友好 HTML）
+    resume = DOCS / "简历模板.html"
+    if resume.exists():
+        HTML_DIR.mkdir(parents=True, exist_ok=True)
+        target = HTML_DIR / "简历模板.html"
+        target.write_text(resume.read_text(encoding="utf-8"), encoding="utf-8")
+        print("HTML:", target.relative_to(ROOT), "（来自 docs/简历模板.html）")
+
     # 2) 用例表 → Excel + CSV
     case_doc = DOCS / "测试用例表.md"
     tables = parse_tables(case_doc)

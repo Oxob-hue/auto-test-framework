@@ -279,7 +279,7 @@ GitHub Actions 流水线产物：`allure-report` Artifact + GitHub Pages 在线�
 
 **求职材料**
 - [`docs/简历项目描述.md`](docs/简历项目描述.md)：可粘贴的简历项目经历 + 技能清单 + 红线提醒；
-- [`docs/简历模板.html`](docs/简历模板.html)：可填写、可打印导出 PDF 的简历模板；
+- [`docs/简历模板.html`](docs/简历模板.html)：可填写、可打印导出 PDF 的简历模板（`scripts/print_pdf.py` 会一并产出 `docs/export/简历模板.pdf`）；
 - [`docs/面试自我介绍与项目讲解话术.md`](docs/面试自我介绍与项目讲解话术.md)：30 秒自我介绍 + 2 分钟项目讲解 + 追问速答；
 - [`docs/GitHub推送与CI首次运行指南.md`](docs/GitHub推送与CI首次运行指南.md)：PAT 推送 + 首次 CI 跑绿步骤。
 
