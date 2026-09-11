@@ -184,7 +184,7 @@ allure open allure-report
 Allure 报告已自动发布到 GitHub Pages。
 
 - 在线 Allure 报告：**https://Oxob-hue.github.io/auto-test-framework/**
-- 最近一次全绿运行：https://github.com/Oxob-hue/auto-test-framework/actions/runs/34560240548
+- 最近一次全绿运行：https://github.com/Oxob-hue/auto-test-framework/actions/runs/34566660445 （4 个 Job 全 success，含 Pages 发布）
 
 首次推送与排错指引见 [`docs/GitHub推送与CI首次运行指南.md`](docs/GitHub推送与CI首次运行指南.md)（含 PAT 生成与常见问题）。
 
