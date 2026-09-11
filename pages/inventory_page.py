@@ -1,12 +1,16 @@
 """SauceDemo 商品列表页对象。"""
 from typing import List, Optional
 
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
 
+from common.logger import get_logger
 from pages.base_page import BasePage
 from pages.cart_page import CartPage
 from pages.login_page import LoginPage
+
+logger = get_logger("inventory_page")
 
 
 class InventoryPage(BasePage):
@@ -79,10 +83,19 @@ class InventoryPage(BasePage):
         return ProductDetailPage(self.driver)
 
     def logout(self) -> LoginPage:
-        """通过左侧菜单退出登录，返回登录页对象。"""
-        self.click_until(self.MENU_BUTTON,
-                         "return !!document.querySelector('#logout_sidebar_link')",
-                         "展开侧边菜单")
+        """通过左侧菜单退出登录，返回登录页对象。
+
+        注意：react-burger-menu 关闭时 `#logout_sidebar_link` 仍存在于 DOM（仅不可见），
+        因此不能以"元素存在"作为菜单已打开的判定，必须判**可见性**并允许重试点击。
+        """
+        for attempt in range(1, 4):
+            self.click(self.MENU_BUTTON)
+            if self.is_element_visible(self.LOGOUT_LINK, timeout=3):
+                break
+            logger.warning("点击菜单后退出链接仍不可见，第 %s 次重试", attempt)
+        else:
+            raise TimeoutException("侧边菜单未成功展开，无法点击退出登录")
+
         self.click_until(self.LOGOUT_LINK,
                          "return !location.pathname.includes('inventory') && "
                          "!location.pathname.includes('cart')",

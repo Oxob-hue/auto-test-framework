@@ -49,10 +49,10 @@ class CartPage(BasePage):
                          "移除单车灯后按钮消失")
 
     def continue_shopping(self) -> "InventoryPage":
-        """点击 Continue Shopping 返回商品列表页。"""
+        """点击 Continue Shopping 返回商品列表页（精确匹配 inventory.html）。"""
         from pages.inventory_page import InventoryPage  # 局部导入避免循环依赖
         self.click_until(self.CONTINUE_SHOPPING_BUTTON,
-                         "return location.pathname.includes('inventory')",
+                         "return location.pathname.includes('inventory.html')",
                          "返回商品列表页")
         return InventoryPage(self.driver)
 

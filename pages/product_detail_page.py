@@ -25,9 +25,13 @@ class ProductDetailPage(BasePage):
         return self.is_element_visible(self.DESCRIPTION, timeout=5)
 
     def back_to_products(self) -> "InventoryPage":
-        """返回商品列表页。"""
+        """返回商品列表页。
+
+        注意：详情页 URL 为 `/inventory-item.html?id=x`，其中也包含 "inventory" 子串，
+        因此跳转判定必须精确匹配 `inventory.html`，否则会在未真正跳转时就判定成功。
+        """
         from pages.inventory_page import InventoryPage  # 局部导入避免循环依赖
         self.click_until(self.BACK_BUTTON,
-                         "return location.pathname.includes('inventory')",
+                         "return location.pathname.includes('inventory.html')",
                          "返回商品列表页")
         return InventoryPage(self.driver)
