@@ -180,9 +180,13 @@ allure open allure-report
 2. `web-tests`：ubuntu 上通过环境变量切到 **Chrome 无头**运行 `-m web`（Selenium Manager 自动匹配驱动）；
 3. `allure-report`：汇总两个 Job 的 Allure 结果 → 生成报告 → 上传 Artifact（即使有失败也会生成，便于查看失败详情）。
 
-使用方式：把项目推送到 GitHub 即自动生效（Web Job 会在首次运行时联网下载匹配的 chromedriver）。
-首次推送与跑绿的逐步指引见 [`docs/GitHub推送与CI首次运行指南.md`](docs/GitHub推送与CI首次运行指南.md)
-（含 PAT 生成、排错与徽章替换）。流水线跑绿后可将下方占位替换为真实徽章：
+**当前状态：CI 已跑通（徽章 passing）**，47 条用例在 ubuntu + Chrome 无头环境全部通过，
+Allure 报告已自动发布到 GitHub Pages。
+
+- 在线 Allure 报告：**https://Oxob-hue.github.io/auto-test-framework/**
+- 最近一次全绿运行：https://github.com/Oxob-hue/auto-test-framework/actions/runs/34560240548
+
+首次推送与排错指引见 [`docs/GitHub推送与CI首次运行指南.md`](docs/GitHub推送与CI首次运行指南.md)（含 PAT 生成与常见问题）。
 
 [![CI](https://github.com/Oxob-hue/auto-test-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/Oxob-hue/auto-test-framework/actions/workflows/ci.yml)
 

@@ -46,7 +46,7 @@ ul, ol { margin: 4px 0 4px 20px; padding: 0; }
 </tr>
 <tr>
 <td>报告结论</td>
-<td><strong>通过</strong>：47 条用例全部通过（含 1 次基础设施类重试后自愈），CI 流水线此前已全绿，本轮扩充后待流水线复验</td>
+<td><strong>通过</strong>：47 条用例在本地（并行/无头）与 <strong>GitHub Actions（Chrome 无头）全部通过</strong>，CI 徽章为 passing，Allure 在线报告已发布</td>
 </tr>
 </tbody>
 </table>
@@ -68,49 +68,50 @@ ul, ol { margin: 4px 0 4px 20px; padding: 0; }
 <td>47</td>
 <td>47</td>
 <td>27</td>
-<td>47（待本轮复验；上一轮 23 条全绿）</td>
+<td>47（接口 Job 20 + Web Job 27）</td>
 </tr>
 <tr>
 <td>通过</td>
 <td>47</td>
 <td>47</td>
 <td>27</td>
-<td>—</td>
+<td><strong>47</strong></td>
 </tr>
 <tr>
 <td>失败 / 中断 / 跳过</td>
 <td>0 / 0 / 0</td>
 <td>0 / 0 / 0</td>
 <td>0 / 0 / 0</td>
-<td>—</td>
+<td>0 / 0 / 0</td>
 </tr>
 <tr>
 <td>通过率</td>
 <td>100%</td>
 <td>100%</td>
 <td>100%</td>
-<td>—</td>
+<td><strong>100%</strong></td>
 </tr>
 <tr>
 <td>耗时</td>
 <td>62.14s（含 1 次重试）</td>
-<td>191.12s</td>
+<td>191.12s / 195.74s</td>
 <td>176.29s（顺序）</td>
-<td>待记录</td>
+<td>接口 Job 约 1 分钟；Web Job 约 5~6 分钟（含驱动下载）</td>
 </tr>
 <tr>
 <td>报告</td>
 <td>Allure（本地 <code>allure open allure-report</code>）</td>
 <td>同左</td>
 <td>同左</td>
-<td>Artifact + GitHub Pages 在线报告</td>
+<td>Artifact + <strong>GitHub Pages 在线报告</strong></td>
 </tr>
 </tbody>
 </table>
 <blockquote>
-<p>说明：本轮为用例体量扩充（23 → 47 条），本地已完成两种模式全量验证
-（并行 47/47、无头 47/47，后者运行条件与 CI 的 Chrome 无头最接近）；
-CI 结果以推送后的流水线为准（本轮推送时 GitHub 网络不可达，待网络恢复后复验）。</p>
+<p>说明：本轮用例体量扩充（23 → 47 条）。本地两种模式全量通过后推送触发流水线；
+首轮 CI 暴露 2 个新增用例的判定缺陷（详情页返回 URL 误匹配 <code>inventory</code>、菜单展开误判元素存在），
+修复后 <strong>CI 复验全绿</strong>（运行 <a href="https://github.com/Oxob-hue/auto-test-framework/actions/runs/34560240548">#34560240548</a>，
+徽章 passing，Pages 报告可访问）。</p>
 </blockquote>
 <h2>2. 分模块结果</h2>
 <table>
