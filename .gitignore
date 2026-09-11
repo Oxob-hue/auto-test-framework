@@ -27,3 +27,8 @@ report_screenshots/*
 # ===== 系统文件 =====
 Thumbs.db
 .DS_Store
+
+# ===== 本地凭据 / 临时诊断脚本（严禁入库）=====
+.gh_token
+.tmp_*.py
+.ci_downloads/

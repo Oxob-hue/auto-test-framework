@@ -177,3 +177,25 @@ class BasePage:
                 return
             logger.warning("点击后状态未达成(%s)，第 %s 次换方式重试 %s", description, attempt, locator)
         raise TimeoutException(f"点击 {locator} 后状态未达成: {description}（已尝试 {attempts} 次）")
+
+    def click_js_until(self, locator: Locator, js_condition: str,
+                       description: str, attempts: int = 3, per_timeout: float = 5.0) -> None:
+        """用 JS 直接触发点击（不要求元素"可点击/可见"）并等待 JS 条件成立。
+
+        适用场景：元素位于动画容器内或当前不可见（如 react-burger-menu 收起时的菜单项），
+        但 DOM 已存在、React 事件委托仍能收到 click —— 此时"等待可见再点击"会因动画竞态不稳定。
+        """
+        for attempt in range(1, attempts + 1):
+            try:
+                element = WebDriverWait(self.driver, self.timeout).until(
+                    EC.presence_of_element_located(locator),
+                    message=f"元素不存在于 DOM: {locator}")
+                self.driver.execute_script("arguments[0].click();", element)
+            except (StaleElementReferenceException, TimeoutException):
+                logger.warning("JS 点击 %s 失败(%s)，重试", locator, attempt)
+                time.sleep(0.5)
+                continue
+            if self._wait_js_until(js_condition, per_timeout):
+                return
+            logger.warning("JS 点击后状态未达成(%s)，第 %s 次重试", description, attempt)
+        raise TimeoutException(f"JS 点击 {locator} 后状态未达成: {description}（已尝试 {attempts} 次）")
