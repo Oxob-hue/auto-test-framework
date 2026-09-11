@@ -34,7 +34,20 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: 运行接口用例
-        run: python -m pytest -m api -q
+        run: |
+          set -o pipefail
+          python -m pytest -m api -q 2>&1 | tee pytest-api.log
+
+      - name: 失败摘要写入 Job Summary
+        if: always()
+        run: |
+          {
+            echo "## 接口用例结果"
+            echo '```'
+            grep -E "^(FAILED|ERROR)" pytest-api.log | head -n 30 || true
+            tail -n 3 pytest-api.log || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: 上传 Allure 结果（接口）
         if: always()
@@ -61,7 +74,26 @@ jobs:
         env:
           TEST_WEB_BROWSER: chrome
           TEST_WEB_HEADLESS: 'true'
-        run: python -m pytest -m web -q
+        run: |
+          set -o pipefail
+          python -m pytest -m web -q 2>&1 | tee pytest-web.log
+
+      - name: 失败摘要写入 Job Summary
+        if: always()
+        run: |
+          {
+            echo "## Web 用例结果"
+            echo '```'
+            grep -E "^(FAILED|ERROR)" pytest-web.log | head -n 40 || true
+            tail -n 3 pytest-web.log || true
+            echo '```'
+            echo "<details><summary>日志尾部 80 行</summary>"
+            echo ""
+            echo '```'
+            tail -n 80 pytest-web.log || true
+            echo '```'
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: 上传 Allure 结果（Web）
         if: always()
