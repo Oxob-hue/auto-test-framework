@@ -82,3 +82,28 @@ def test_badge_disappears_after_removing_last_item(driver, base_url):
     with allure.step("断言购物车为空且角标消失"):
         assert cart_page.get_cart_item_count() == 0, "购物车应为空"
         assert cart_page.get_cart_badge_count() is None, "角标应消失"
+
+
+@allure.story("角标与购物车条目跨页面一致性")
+@allure.severity(allure.severity_level.CRITICAL)
+def test_badge_and_cart_items_consistent_for_three_products(driver, base_url):
+    """业务一致性：加购 3 件后移除 1 件，角标数与购物车条目/商品名始终保持一致。"""
+    with allure.step("登录并依次加购 3 件商品"):
+        inventory_page = _login(driver, base_url)
+        inventory_page.add_backpack_to_cart()
+        inventory_page.add_bike_light_to_cart()
+        inventory_page.add_bolt_tshirt_to_cart()
+        assert inventory_page.get_cart_badge_count() == "3", "加购三件后角标应为 3"
+
+    with allure.step("进入购物车校验条目与商品名"):
+        cart_page = inventory_page.go_to_cart()
+        assert cart_page.get_cart_item_count() == 3, "购物车应有 3 件商品"
+        names = set(cart_page.get_item_names())
+        assert names == {"Sauce Labs Backpack", "Sauce Labs Bike Light",
+                         "Sauce Labs Bolt T-Shirt"}, f"购物车商品不正确: {names}"
+
+    with allure.step("移除背包后角标与条目应同步为 2"):
+        cart_page.remove_backpack()
+        assert cart_page.get_cart_item_count() == 2, "移除一件后应剩 2 件"
+        assert cart_page.get_cart_badge_count() == "2", "角标应更新为 2"
+        assert "Sauce Labs Backpack" not in cart_page.get_item_names(), "背包应已被移除"

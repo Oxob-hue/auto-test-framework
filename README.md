@@ -6,7 +6,7 @@
 >
 > 集成 **Allure** 可视化报告，失败自动收集「日志 + 截图 + 页面源码」；
 > 内置**失败自动重试**（仅基础设施类异常）与 **GitHub Actions CI/CD 流水线**。
-> 当前全量用例 **47 个，全部通过**（接口 20 + Web 27）。
+> 当前全量用例 **53 个，全部通过**（接口 24 + Web 29）。
 
 ---
 
@@ -70,34 +70,35 @@
 │   ├── product_detail_page.py   # 商品详情页
 │   ├── cart_page.py             # 购物车页（数量/名称/角标/继续购物/移除）
 │   ├── checkout_page.py         # 结算页（信息/金额/取消/完成）
-│   └── checkout_page.py         # 结算页（信息/总览/完成/表单校验）
 ├── tests/                       # 测试用例层（唯一的 conftest 全局夹具）
 │   ├── conftest.py              # driver(edge/chrome)/api/pet_api + 失败自动收集
 │   ├── test_pet.py              # 接口：增删改查 + schema 校验 + 异常 + 状态参数化
 │   ├── test_pet_contract.py     # 接口：健壮性与契约（边界/幂等/非法入参/响应契约）
+│   ├── test_pet_business_flow.py # 接口：业务链路与最终一致性（状态流转/增改删在列表的可见性）
 │   ├── test_pet_param.py        # 接口：JSON 数据驱动创建
 │   ├── test_login.py            # Web：登录正向/反向 + 购物车主流程
 │   ├── test_auth_guard.py       # Web：访问控制（未登录重定向）+ 退出登录
 │   ├── test_inventory.py        # Web：排序 4 种 / 详情一致性 / 多商品加购 / 列表移除
-│   ├── test_cart.py             # Web：购物车空态 / 继续购物 / 部分移除 / 角标消失
-│   └── test_checkout.py         # Web：下单 E2E + 金额计算 + 取消下单 + 表单校验
+│   ├── test_cart.py             # Web：购物车状态 + 跨页面角标/条目一致性
+│   └── test_checkout.py         # Web：下单 E2E + 金额计算（含跨页面金额一致性）+ 取消 + 表单校验
 ├── test_data/
 │   ├── pet_data.json            # 参数化测试数据
 │   └── pet_response_schema.json # 接口响应结构约束（jsonschema）
-├── scripts/
-│   └── defect_probe.py          # 被测系统缺陷探测（真实取证，不参与回归）
-├── docs/                        # 测试与求职文档
+├── scripts/                     # 开发与 CI 辅助脚本（见下方"脚本说明"）
+│   ├── defect_probe.py          # 被测系统缺陷探测（真实取证，不参与回归）
+│   ├── check_ci_status.py       # 查看 CI 徽章 / Pages 报告 / 最新运行结论
+│   ├── ci_fetch_failures.py     # 用本地只读令牌拉取失败 Job 日志与 Allure 产物
+│   ├── export_docs.py           # Markdown → Excel/CSV/HTML（打印用）
+│   └── print_pdf.py             # HTML → PDF（Selenium CDP 打印）
+├── docs/                        # 测试流程文档
 │   ├── 测试计划.md               # 测试计划（项目版：范围/策略/环境/风险/排期）
-│   ├── 测试用例表.md             # 全量 47 条用例明细（编号/步骤/预期/实现位置/marker）
+│   ├── 测试用例表.md             # 全量 53 条用例明细（编号/步骤/预期/实现位置/marker）
 │   ├── 测试设计说明.md           # 设计思路（等价类/正反向/数据/稳定性）
 │   ├── 测试报告.md               # 测试报告（真实执行结果与结论）
 │   ├── 测试报告模板.md           # 报告模板（可复用于其他项目）
 │   ├── 缺陷记录表.md             # 缺陷记录（框架 4 条 + 被测系统 2 条）
 │   ├── 缺陷与踩坑记录.md         # 踩坑复盘（含跨浏览器稳定性完整排障过程）
 │   ├── 缺陷复现演示.md           # 被测系统缺陷（problem_user 取证）
-│   ├── 简历项目描述.md           # 简历可粘贴文案 + 技能清单 + 红线提醒
-│   ├── 简历模板.html             # 可填写/可打印（导出 PDF）的简历模板
-│   ├── 面试自我介绍与项目讲解话术.md  # 30 秒自我介绍 + 2 分钟讲解 + 追问速答
 │   └── GitHub推送与CI首次运行指南.md  # PAT 推送 + 首次跑绿步骤
 ├── config.ini                   # 环境配置（唯一配置入口）
 ├── pytest.ini                   # Pytest 配置（markers/addopts/重试策略）
@@ -180,7 +181,7 @@ allure open allure-report
 2. `web-tests`：ubuntu 上通过环境变量切到 **Chrome 无头**运行 `-m web`（Selenium Manager 自动匹配驱动）；
 3. `allure-report`：汇总两个 Job 的 Allure 结果 → 生成报告 → 上传 Artifact（即使有失败也会生成，便于查看失败详情）。
 
-**当前状态：CI 已跑通（徽章 passing）**，47 条用例在 ubuntu + Chrome 无头环境全部通过，
+**当前状态：CI 已跑通（徽章 passing）**，53 条用例在 ubuntu + Chrome 无头环境全部通过，
 Allure 报告已自动发布到 GitHub Pages。
 
 - 在线 Allure 报告：**https://Oxob-hue.github.io/auto-test-framework/**
@@ -238,38 +239,40 @@ Allure 报告已自动发布到 GitHub Pages。
 ## ✅ 当前回归结果（本地全量）
 
 ```
-collected 47 items
+collected 53 items
 tests\test_auth_guard.py ...     tests\test_pet.py .........
-tests\test_cart.py ....          tests\test_pet_contract.py ........
-tests\test_checkout.py ......    tests\test_pet_param.py ...
-tests\test_inventory.py .......  tests\test_login.py .......
+tests\test_cart.py .....         tests\test_pet_business_flow.py ....
+tests\test_checkout.py .......   tests\test_pet_contract.py ........
+tests\test_inventory.py .......  tests\test_pet_param.py ...
+tests\test_login.py .......
 
-=================== 47 passed, 1 rerun in 62.14s (0:01:02) ===================
+======================== 53 passed in 70.30s (0:01:10) ========================
 ```
 
-Allure 摘要：passed=47, failed=0, broken=0, skipped=0。
+Allure 摘要：passed=53, failed=0, broken=0, skipped=0。
 GitHub Actions 流水线产物：`allure-report` Artifact + GitHub Pages 在线报告。
 
 ### ⚡ 执行效率（并发优化）
 
 | 执行方式 | 耗时 | 说明 |
 |----------|------|------|
-| 并行执行 `pytest tests -n 4` | 62.14s | pytest-xdist，4 worker 并发（47 条全量，含 1 次基础设施类重试） |
-| 无头全量（近似 CI） | 191.12s | 单进程 + Edge 无头，47 条全部通过（运行条件与 CI 最接近） |
-| Web 子集顺序执行 | 176.29s | 27 条 Web 用例单进程逐条执行 |
+| 并行执行 `pytest tests -n 4`（无头） | 70.30s | 53 条全量，4 worker |
+| Web 子集 `-n 2`（无头，与 CI 同配置） | 103.79s | 29 条 Web 用例；顺序执行约 170s，**提速约 39%** |
+| 接口子集 `-n 2` | 27.98s | 24 条接口用例 |
 
 > 接口用例以网络等待为主、Web 用例浏览器会话相互独立，天然适合并行；
-> 全量统计与提速数据见 [`docs/测试报告模板.md`](docs/测试报告模板.md)。
+> CI 的接口 / Web 两个 Job 均已配置 `-n 2` 并行执行。
+> 全量统计与提速数据见 [`docs/测试报告.md`](docs/测试报告.md)。
 
 ---
 
-## 📚 测试流程与求职文档
+## 📚 测试流程文档
 
 **测试流程文档（覆盖"计划 → 用例 → 执行 → 缺陷 → 报告"完整闭环）**
-- [`docs/测试计划.md`](docs/测试计划.md)：项目版测试计划（范围 47 条、策略、环境、准入准出、风险应对、阶段安排）；
-- [`docs/测试用例表.md`](docs/测试用例表.md)：全量 47 条用例明细（编号 / 类型 / 优先级 / 前置 / 步骤 / 预期 / 代码位置 / marker）；
+- [`docs/测试计划.md`](docs/测试计划.md)：项目版测试计划（范围 53 条、策略、环境、准入准出、风险应对、阶段安排）；
+- [`docs/测试用例表.md`](docs/测试用例表.md)：全量 53 条用例明细（编号 / 类型 / 优先级 / 前置 / 步骤 / 预期 / 代码位置 / marker）；
 - [`docs/测试设计说明.md`](docs/测试设计说明.md)：等价类与边界、正反向分离、数据策略、稳定性与可观测性设计；
-- [`docs/测试报告.md`](docs/测试报告.md)：真实执行报告（47/47 通过、分模块结果、缺陷统计、风险遗留、结论建议）；
+- [`docs/测试报告.md`](docs/测试报告.md)：真实执行报告（53/53 通过、分模块结果、缺陷统计、风险遗留、结论建议）；
 - [`docs/缺陷记录表.md`](docs/缺陷记录表.md)：缺陷记录（框架自身 4 条已修复 + 被测系统 2 条已取证）；
 - [`docs/测试报告模板.md`](docs/测试报告模板.md)：可复用的报告模板。
 
@@ -277,11 +280,18 @@ GitHub Actions 流水线产物：`allure-report` Artifact + GitHub Pages 在线�
 - [`docs/缺陷与踩坑记录.md`](docs/缺陷与踩坑记录.md)：跨浏览器稳定性完整排障过程 + PO 缩进 / 日志流 / 重复 conftest 复盘 + 面试追问速答；
 - [`docs/缺陷复现演示.md`](docs/缺陷复现演示.md)：被测系统（SauceDemo problem_user）真实取证的 2 个缺陷。
 
-**求职材料**
-- [`docs/简历项目描述.md`](docs/简历项目描述.md)：可粘贴的简历项目经历 + 技能清单 + 红线提醒；
-- [`docs/简历模板.html`](docs/简历模板.html)：可填写、可打印导出 PDF 的简历模板（`scripts/print_pdf.py` 会一并产出 `docs/export/简历模板.pdf`）；
-- [`docs/面试自我介绍与项目讲解话术.md`](docs/面试自我介绍与项目讲解话术.md)：30 秒自我介绍 + 2 分钟项目讲解 + 追问速答；
+**CI 与使用指引**
 - [`docs/GitHub推送与CI首次运行指南.md`](docs/GitHub推送与CI首次运行指南.md)：PAT 推送 + 首次 CI 跑绿步骤。
+
+**脚本说明（`scripts/`）**
+
+| 脚本 | 用途 |
+|------|------|
+| `defect_probe.py` | 横向对比探测被测系统缺陷（standard vs problem_user），产出取证数据，不参与回归 |
+| `export_docs.py` | 把 `docs/*.md` 导出为 `测试用例表.xlsx`（多 Sheet）、`.csv` 与打印用 HTML |
+| `print_pdf.py` | 用 Selenium + CDP `Page.printToPDF` 把 HTML 打印为 A4 PDF（测试计划/用例表/报告） |
+| `check_ci_status.py` | 一条命令查看 CI 徽章、GitHub Pages 报告可用性与最新运行结论（无需鉴权） |
+| `ci_fetch_failures.py` | 用本地只读令牌（`.gh_token`，已忽略）拉取失败 Job 日志与 Allure 产物，便于快速定位 |
 
 **文档导出（Excel / PDF，便于发给面试官或打印）**
 ```bash

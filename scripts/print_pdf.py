@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parent.parent
 HTML_DIR = ROOT / "docs" / "export" / "html"
 OUT_DIR = ROOT / "docs" / "export"
 
-DOCS = ["测试计划", "测试用例表", "测试报告", "简历模板"]
+DOCS = ["测试计划", "测试用例表", "测试报告"]
 
 
 def main() -> int:

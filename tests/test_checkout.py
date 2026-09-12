@@ -122,3 +122,38 @@ def test_checkout_required_fields(driver, base_url,
         error_msg = checkout_page.try_get_error_message()
         if error_msg:
             assert expected_msg in error_msg, f"错误提示内容不符: {error_msg!r}"
+
+
+@allure.story("跨页面金额一致性")
+@allure.severity(allure.severity_level.CRITICAL)
+def test_two_items_totals_match_inventory_prices(driver, base_url):
+    """业务一致性：结算页的小计应等于商品列表页读取到的两件商品价格之和。"""
+    with allure.step("登录并从商品列表读取两件商品价格"):
+        login_page = LoginPage(driver)
+        login_page.open_url(base_url)
+        login_page.login("standard_user", "secret_sauce")
+        inventory_page = InventoryPage(driver)
+        price_map = inventory_page.get_product_price_map()
+        assert len(price_map) >= 2, f"商品价格读取失败: {price_map}"
+        expected_total = price_map["Sauce Labs Backpack"] + price_map["Sauce Labs Bike Light"]
+
+    with allure.step("加购两件商品并进入结算页"):
+        inventory_page.add_backpack_to_cart()
+        inventory_page.add_bike_light_to_cart()
+        assert inventory_page.get_cart_badge_count() == "2", "加购两件后角标应为 2"
+        cart_page = inventory_page.go_to_cart()
+        assert cart_page.get_cart_item_count() == 2, "购物车应有 2 件商品"
+        checkout_page = cart_page.click_checkout()
+
+    with allure.step("填写信息并读取订单总览金额"):
+        checkout_page.fill_customer_info("San", "Zhang", "100000")
+        checkout_page.continue_to_overview()
+        item_total = checkout_page.get_item_total()
+        tax = checkout_page.get_tax()
+        total = checkout_page.get_total()
+
+    with allure.step("断言小计与列表价格一致、总计 = 小计 + 税费"):
+        assert abs(item_total - expected_total) < 0.01, \
+            f"结算小计({item_total}) 与列表价格之和({expected_total:.2f}) 不一致"
+        assert abs(total - (item_total + tax)) < 0.01, \
+            f"总计({total}) 应等于 小计({item_total}) + 税费({tax})"

@@ -18,6 +18,7 @@ class InventoryPage(BasePage):
     TITLE = (By.CLASS_NAME, "title")
     ADD_TO_CART_BUTTON = (By.ID, "add-to-cart-sauce-labs-backpack")
     ADD_BIKE_LIGHT_BUTTON = (By.ID, "add-to-cart-sauce-labs-bike-light")
+    ADD_BOLT_TSHIRT_BUTTON = (By.ID, "add-to-cart-sauce-labs-bolt-t-shirt")
     REMOVE_BACKPACK_BUTTON = (By.ID, "remove-sauce-labs-backpack")
     CART_BADGE = (By.CLASS_NAME, "shopping_cart_badge")
     CART_LINK = (By.CLASS_NAME, "shopping_cart_link")
@@ -36,6 +37,7 @@ class InventoryPage(BasePage):
     # React 提交加购后，add 按钮会替换为 remove 按钮（id 形如 remove-<商品>）
     _REMOVE_BACKPACK_JS = "return !!document.querySelector('#remove-sauce-labs-backpack')"
     _REMOVE_BIKE_LIGHT_JS = "return !!document.querySelector('#remove-sauce-labs-bike-light')"
+    _REMOVE_BOLT_TSHIRT_JS = "return !!document.querySelector('#remove-sauce-labs-bolt-t-shirt')"
     _ADD_BACKPACK_JS = "return !!document.querySelector('#add-to-cart-sauce-labs-backpack')"
 
     def get_title_text(self) -> str:
@@ -49,6 +51,11 @@ class InventoryPage(BasePage):
         """把“Sauce Labs Bike Light”加入购物车，并等待 React 状态提交完成。"""
         self.click_until(self.ADD_BIKE_LIGHT_BUTTON, self._REMOVE_BIKE_LIGHT_JS, "加购后出现移除按钮")
 
+    def add_bolt_tshirt_to_cart(self) -> None:
+        """把“Sauce Labs Bolt T-Shirt”加入购物车，并等待 React 状态提交完成。"""
+        self.click_until(self.ADD_BOLT_TSHIRT_BUTTON, self._REMOVE_BOLT_TSHIRT_JS,
+                         "加购后出现移除按钮")
+
     def remove_backpack_from_list(self) -> None:
         """在商品列表页直接移除背包（按钮重新变回 Add to cart）。"""
         self.click_until(self.REMOVE_BACKPACK_BUTTON, self._ADD_BACKPACK_JS, "列表页移除背包")
@@ -57,6 +64,12 @@ class InventoryPage(BasePage):
         """购物车角标数量；尚未加购（角标不存在）时返回 None。"""
         badges = self.find_elements(self.CART_BADGE)
         return badges[0].text if badges else None
+
+    def get_product_price_map(self) -> dict:
+        """返回 {商品名: 价格} 映射，用于跨页面金额一致性校验。"""
+        names = [e.text for e in self.find_elements(self.PRODUCT_NAMES)]
+        prices = [float(e.text.replace("$", "").strip()) for e in self.find_elements(self.PRODUCT_PRICES)]
+        return dict(zip(names, prices))
 
     def select_sort_option(self, value: str) -> None:
         """按 value 选择商品排序方式（az/za/lohi/hilo）。"""
